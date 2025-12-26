@@ -1,0 +1,15 @@
+{
+  "media": [
+    {
+      "title": "Zombiez — Mondschein",
+      "src": ["/media/audio/mondschein.mp3"],
+      "chapter": 1,
+      "before": "В наушниках Игоря играла песня «Mondschein» группы Zombiez. Он почти не знал немецкого языка, но ему этого и не требовалось"
+    },
+    {
+      "src": ["/media/images/meme1.png", "/media/images/meme2.png"],
+      "chapter": 2,
+      "after": "Он пролистнул дальше — и настроение начало меняться."
+    }
+  ]
+}

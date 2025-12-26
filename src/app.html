@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="stylesheet" href="/fonts.css" />
+		<link rel="icon" href="/favicon.ico" type="image/x-icon" />
+		%sveltekit.head%
+	</head>
+	<style>
+		:root {
+			--font-family: Lato, sans-serif;
+			--font-size: 14pt;
+			--text-color: rgb(0, 0, 0);
+			--bg-color: rgb(255, 255, 255);
+			--content-width: 700px;
+			--border-color: rgba(0, 0, 0, 0.1);
+			--text-muted: #888;
+		}
+
+		:global(.theme-light) {
+			--text-color: rgb(0, 0, 0);
+			--bg-color: rgb(255, 255, 255);
+			--link-color: #1e88e5;
+			--link-hover-color: #0d47a1;
+			--text-muted: #888;
+		}
+
+		:global(.theme-dark) {
+			--text-color: rgb(223, 223, 236);
+			--bg-color: rgb(39, 39, 43);
+			--link-color: #4fc3f7;
+			--link-hover-color: #0097a7;
+			--text-muted: #aaa;
+		}
+
+		body {
+			font-family: var(--font-family);
+			font-size: var(--font-size);
+			color: var(--text-color);
+			background-color: var(--bg-color);
+			margin: 0;
+			padding: 0;
+		}
+
+		.chapter-content {
+			width: var(--content-width);
+			margin: 0 auto;
+			padding: 1.5rem;
+		}
+
+		p {
+			margin-block-start: 0;
+			margin-block-end: 0;
+		}
+
+		p.scene-divider {
+			text-align: center;
+			color: var(--text-muted);
+		}
+
+		a {
+			color: var(--link-color, var(--text-color));
+			text-decoration: none;
+			border-bottom: 1px solid transparent;
+			transition: border-color 0.2s;
+		}
+
+		a:hover {
+			border-bottom-color: var(--link-hover-color, var(--text-color));
+		}
+
+		button,
+		input,
+		select,
+		textarea {
+			font-family: inherit !important;
+			font-size: inherit !important;
+		}
+	</style>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>
