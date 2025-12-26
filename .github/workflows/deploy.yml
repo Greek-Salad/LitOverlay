@@ -33,7 +33,10 @@ jobs:
 
       - name: Build
         run: |
-          export GITHUB_PAGES_BASE_PATH="/${GITHUB_REPOSITORY#*/}"
+          echo "GITHUB_REPOSITORY: $GITHUB_REPOSITORY"
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          echo "REPO_NAME: $REPO_NAME"
+          export BASE_PATH="/$REPO_NAME"
           npm run build
 
       - name: Upload artifact
