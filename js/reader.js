@@ -707,11 +707,13 @@ class ChapterLoader {
     this.currentChapter = 1;
     this.totalChapters = 0;
     this.chapterFiles = [];
+    this.chapterTitles = {};
   }
 
   async init() {
     try {
       await this.scanChapters();
+      await this.loadChapterTitles();
       console.log(
         `✅ ChapterLoader initialized, found ${this.totalChapters} chapters`,
       );
@@ -728,9 +730,46 @@ class ChapterLoader {
     }
   }
 
+  async loadChapterTitles() {
+      console.log("📚 Loading chapter titles...");
+      this.chapterTitles = {};
+
+      for (let i = 1; i <= this.totalChapters; i++) {
+          const chapterInfo = this.chapterFiles.find((c) => c.number === i && c.exists);
+          if (!chapterInfo) continue;
+
+          try {
+              const response = await fetch(`./chapters/${chapterInfo.filename}`, {
+                  cache: "no-cache",
+                  method: "GET"
+              });
+
+              if (!response.ok) {
+                  throw new Error(`HTTP ${response.status}`);
+              }
+
+              const html = await response.text();
+              const tempDoc = new DOMParser().parseFromString(html, "text/html");
+              const firstH2 = tempDoc.querySelector("h2");
+
+              if (firstH2) {
+                  this.chapterTitles[i] = firstH2.textContent.trim();
+                  console.log(`📚 Title for chapter ${i}: ${this.chapterTitles[i]}`);
+              } else {
+                  this.chapterTitles[i] = `Глава ${i}`;
+                  console.log(`📚 Title for chapter ${i} not found, using fallback: ${this.chapterTitles[i]}`);
+              }
+          } catch (error) {
+              console.error(`Error loading title for chapter ${i}:`, error);
+              this.chapterTitles[i] = `Глава ${i}`;
+          }
+      }
+      console.log("📚 Finished loading chapter titles:", this.chapterTitles);
+  }
+
   async scanChapters() {
     this.chapterFiles = [];
-    const maxChapters = 33;
+    const maxChapters = 99;
 
     for (let i = 1; i <= maxChapters; i++) {
       try {
@@ -1025,13 +1064,24 @@ class ChapterLoader {
     const nextBtn = document.getElementById("next-chapter");
     const breadcrumb = document.getElementById("current-chapter-title");
 
+    let prevChapterTitle = `Глава ${this.currentChapter - 1}`;
+    let nextChapterTitle = `Глава ${this.currentChapter + 1}`;
+
+    if (this.currentChapter > 1) {
+        prevChapterTitle = this.chapterTitles[this.currentChapter - 1] || `Глава ${this.currentChapter - 1}`;
+    }
+
+    if (this.currentChapter < this.totalChapters) {
+        nextChapterTitle = this.chapterTitles[this.currentChapter + 1] || `Глава ${this.currentChapter + 1}`;
+    }
+
     if (prevBtn) {
       prevBtn.disabled = this.currentChapter <= 1;
       prevBtn.innerHTML =
         this.currentChapter > 1
           ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/>
-                </svg> Глава ${this.currentChapter - 1}`
+                </svg> ${prevChapterTitle}`
           : `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/>
                 </svg> Начало`;
@@ -1041,7 +1091,7 @@ class ChapterLoader {
       nextBtn.disabled = this.currentChapter >= this.totalChapters;
       nextBtn.innerHTML =
         this.currentChapter < this.totalChapters
-          ? `Глава ${this.currentChapter + 1} 
+          ? `${nextChapterTitle} 
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
                 </svg>`
@@ -1052,7 +1102,7 @@ class ChapterLoader {
     }
 
     if (breadcrumb) {
-      breadcrumb.textContent = `Глава ${this.currentChapter}`;
+      breadcrumb.textContent = this.chapterTitles[this.currentChapter] || `Глава ${this.currentChapter}`;
     }
   }
 
@@ -1465,6 +1515,11 @@ class ReadingApp {
     }
 
     this.progressBarElement.style.width = `${scrollPercentage}%`;
+    const progressTextElement = document.getElementById('reading-progress-text');
+    if (progressTextElement) {
+        const roundedPercentage = Math.round(scrollPercentage);
+        progressTextElement.textContent = `Прочтено: ${roundedPercentage}%`;
+    }
   }
 
   setupUI() {
