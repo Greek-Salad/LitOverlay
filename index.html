@@ -119,6 +119,31 @@
                 </div>
             </div>
 
+            <div class="toolbar-center">
+                <div class="search-controls">
+                    <button id="search-prev" class="icon-btn search-nav-btn" aria-label="Предыдущее вхождение"
+                        title="Предыдущее вхождение (Shift+Enter)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" />
+                        </svg>
+                    </button>
+
+                    <div class="search-field-container">
+                        <input type="text" id="search-input" class="search-input" placeholder="Поиск в тексте..."
+                            aria-label="Поиск по тексту главы" spellcheck="false" autocapitalize="off"
+                            autocomplete="off">
+                        <div id="search-status" class="search-status" aria-live="polite"></div>
+                    </div>
+
+                    <button id="search-next" class="icon-btn search-nav-btn" aria-label="Следующее вхождение"
+                        title="Следующее вхождение (Enter)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
             <div class="toolbar-right">
                 <span id="reading-progress-text" class="progress-text">Прочтено: 0%</span>
                 <div class="progress-indicator">
