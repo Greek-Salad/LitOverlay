@@ -1,0 +1,124 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2024-01-01T12:00:00Z",
+  "media": [
+    {
+      "id": "audio-1",
+      "type": "audio",
+      "title": "Zombiez — Mondschein",
+      "src": ["/media/audio/mondschein.mp3"],
+      "format": "audio/mpeg",
+      "chapter": 1,
+      "position": "before",
+      "anchor": "наушниках Игоря играла песня «Mondschein» группы Zombiez"
+    },
+    {
+      "id": "audio-2",
+      "type": "audio",
+      "title": "Ektomorf — What Doesn't Kill Me",
+      "src": ["/media/audio/what_doesnt_kill_me.mp3"],
+      "format": "audio/mpeg",
+      "chapter": 1,
+      "position": "before",
+      "anchor": "Он достал смартфон, открыл приложение и вбил в поиск: Ektomorf."
+    },
+    {
+      "id": "audio-3",
+      "type": "audio",
+      "title": "Akelei — De Zwaarte",
+      "src": ["/media/audio/de_zwaarte.mp3"],
+      "format": "audio/mpeg",
+      "chapter": 5,
+      "position": "before",
+      "anchor": "Вечерний город плыл мимо — мрачный, шершавый, как старая плёнка"
+    },
+    {
+      "id": "audio-4",
+      "type": "audio",
+      "title": "Diary of Dreams — Wahn!Sinn?",
+      "src": ["/media/audio/wahnsinn.mp3"],
+      "format": "audio/mpeg",
+      "chapter": 7,
+      "position": "before",
+      "anchor": "В автобусе он решил не забивать голову мыслями и отдать своё внимание музыке"
+    },
+    {
+      "id": "audio-5",
+      "type": "audio",
+      "title": "Semiquaver — A New Sorrow",
+      "src": ["/media/audio/a_new_sorrow.mp3"],
+      "format": "audio/mpeg",
+      "chapter": 14,
+      "position": "after",
+      "anchor": "Композиция была мягкой, чуть грустной, но не безысходной"
+    },
+    {
+      "id": "audio-6",
+      "type": "audio",
+      "title": "Heretoir — Burial",
+      "src": ["/media/audio/burial.mp3"],
+      "format": "audio/mpeg",
+      "chapter": 15,
+      "position": "before",
+      "anchor": "Игорь распластался на кровати в хостеле, словно выжатый до последней капли. В наушниках играла песня «Burial» группы Heretoir"
+    },
+    {
+      "id": "audio-7",
+      "type": "audio",
+      "title": "Apocryphos — Leaden Waves",
+      "src": ["/media/audio/leaden_waves.mp3"],
+      "format": "audio/mpeg",
+      "chapter": 15,
+      "position": "after",
+      "anchor": "Он попытался их вытеснить: достал наушники, включил «Leaden Waves» от Apocryphos. Звуки были вязкие"
+    },
+    {
+      "id": "audio-8",
+      "type": "audio",
+      "title": "Dagoba — Vantablack",
+      "src": ["/media/audio/vantablack.mp3"],
+      "format": "audio/mpeg",
+      "chapter": 21,
+      "position": "after",
+      "anchor": "нашёл в плейлисте песню «Vantablack» группы Dagoba, ткнул «Play» и выкрутил громкость на максимум"
+    },
+    {
+      "id": "audio-9",
+      "type": "audio",
+      "title": "Jeremy Zuckerman — Agni Kai",
+      "src": ["/media/audio/agni_kai.mp3"],
+      "format": "audio/mpeg",
+      "chapter": 25,
+      "position": "after",
+      "anchor": "Несколько секунд поиска в Интернете — и он включил трек."
+    },
+    {
+      "id": "image-1",
+      "type": "image",
+      "src": ["/media/images/meme1.png", "/media/images/meme2.png", "/media/images/meme3.png"],
+      "format": "image/png",
+      "chapter": 22,
+      "position": "after",
+      "anchor": "Он пролистнул дальше — и настроение начало меняться."
+    },
+    {
+      "id": "image-2",
+      "type": "image",
+      "src": ["/media/images/armor.png"],
+      "format": "image/png",
+      "chapter": 23,
+      "position": "after",
+      "anchor": "Он начал с простого контура. Обтекание формы головы. Затем прорези для глаз. Затем немного рельефа. Имитация острых скул и тяжёлых бровей. Под конец — капюшон, прячущий остальную часть головы в непроглядную тьму.",
+      "width": "100%",
+      "height": "auto"
+    }
+  ],
+  "settings": {
+    "autoPlayAudio": false,
+    "preloadImages": true,
+    "lazyLoad": true,
+    "imageQuality": "high",
+    "audioVolume": 0.7,
+    "showCaptions": true
+  }
+}

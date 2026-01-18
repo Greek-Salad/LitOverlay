@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Читальный движок</title>
+    <link rel="icon" href="./favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="./css/styles.css">
+    <link rel="stylesheet" href="./css/audio-player.css">
+    <link rel="stylesheet" href="./css/color-picker.css">
+    <style>
+        @font-face {
+            font-family: 'Lato';
+            src: url('./fonts/Lato-Regular.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Lato';
+            src: url('./fonts/Lato-Bold.woff2') format('woff2');
+            font-weight: bold;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Lato';
+            src: url('./fonts/Lato-Italic.woff2') format('woff2');
+            font-weight: normal;
+            font-style: italic;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Antiqua';
+            src: url('./fonts/Antiqua-Regular.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'LiberationSans';
+            src: url('./fonts/LiberationSans-Regular.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'LiberationSerif';
+            src: url('./fonts/LiberationSerif-Regular.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Roboto';
+            src: url('./fonts/Roboto-Regular.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'SourceCodePro';
+            src: url('./fonts/SourceCodePro-Regular.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Whitney';
+            src: url('./fonts/Whitney-Regular.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        body {
+            font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        :root {
+            --font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <button id="close-sidebar" class="icon-btn" aria-label="Закрыть меню">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                </svg>
+            </button>
+            <h2 class="sidebar-title">Оглавление</h2>
+        </div>
+        <nav id="chapter-nav" class="chapter-list" role="navigation" aria-label="Навигация по главам">
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="toolbar">
+            <div class="toolbar-left">
+                <button id="menu-toggle" class="icon-btn" aria-label="Открыть меню">
+                    <img id="menu-icon" src="./icons/menu-black.svg" alt="Меню" width="24" height="24">
+                </button>
+                <div class="breadcrumb">
+                    <span id="current-chapter-title">Глава 1</span>
+                </div>
+            </div>
+
+            <div class="toolbar-right">
+                <div class="progress-indicator">
+                    <div class="progress-indicator-bar" id="reading-progress-bar"></div>
+                </div>
+                <div class="theme-switcher">
+                    <button id="theme-toggle" class="icon-btn theme-toggle-btn" aria-label="Переключить тему">
+                        <img id="theme-icon" src="./icons/moon.svg" alt="Тёмная тема" width="20" height="20">
+                    </button>
+                </div>
+
+                <button id="settings-toggle" class="icon-btn" aria-label="Настройки">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="reading-area-wrapper">
+            <article id="reading-area" class="reading-area">
+                <div id="chapter-content" class="chapter-content" role="article">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Загрузка главы...</p>
+                    </div>
+                </div>
+                <footer class="chapter-navigation">
+                    <button id="prev-chapter" class="nav-btn prev-btn" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" />
+                        </svg>
+                        Предыдущая глава
+                    </button>
+                    <button id="next-chapter" class="nav-btn next-btn">
+                        Следующая глава
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" />
+                        </svg>
+                    </button>
+                </footer>
+            </article>
+        </div>
+    </main>
+
+    <div id="settings-panel" class="settings-panel" aria-hidden="true">
+        <div class="settings-header">
+            <h3>Настройки</h3>
+            <button id="close-settings" class="icon-btn close-settings-btn" aria-label="Закрыть настройки">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="settings-content">
+            <div class="settings-group">
+                <h4>Шрифт</h4>
+                <div class="font-selector">
+                    <select id="font-family" class="settings-select">
+                        <option value="Lato" style="font-family: 'Lato';">Lato (по умолчанию)</option>
+                        <option value="Antiqua" style="font-family: 'Antiqua';">Antiqua</option>
+                        <option value="LiberationSans" style="font-family: 'LiberationSans';">Liberation Sans</option>
+                        <option value="LiberationSerif" style="font-family: 'LiberationSerif';">Liberation Serif
+                        </option>
+                        <option value="Roboto" style="font-family: 'Roboto';">Roboto</option>
+                        <option value="SourceCodePro" style="font-family: 'SourceCodePro';">Source Code Pro</option>
+                        <option value="Whitney" style="font-family: 'Whitney';">Whitney</option>
+                    </select>
+                </div>
+
+                <div class="font-size-control">
+                    <label for="font-size">Размер шрифта: <span id="font-size-value">16px</span></label>
+                    <input type="range" id="font-size" min="12" max="24" step="1" value="16" class="settings-slider">
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h4>Ширина текста</h4>
+                <div class="width-control">
+                    <label for="text-width">Ширина: <span id="text-width-value">800px</span></label>
+                    <input type="range" id="text-width" min="400" max="1200" step="50" value="800"
+                        class="settings-slider">
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h4>Цвета</h4>
+                <div class="color-controls">
+                    <div class="color-control">
+                        <label for="bg-color-picker">Фон</label>
+                        <div id="bg-color-picker" class="color-picker-btn" data-color="#ffffff">
+                            <div class="color-preview"></div>
+                        </div>
+                    </div>
+
+                    <div class="color-control">
+                        <label for="text-color-picker">Текст</label>
+                        <div id="text-color-picker" class="color-picker-btn" data-color="#000000">
+                            <div class="color-preview"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="theme-presets">
+                    <button class="theme-preset-btn" data-theme="light">Светлая</button>
+                    <button class="theme-preset-btn" data-theme="dark">Тёмная</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="overlay" class="overlay" aria-hidden="true"></div>
+
+    <script src="./js/media-injector.js"></script>
+    <script src="./js/reader.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            window.mediaInjector = new MediaInjector();
+        });
+    </script>
+</body>
+</html>

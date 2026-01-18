@@ -1,0 +1,219 @@
+.custom-audio-player {
+    background: var(--player-bg, var(--bg-color));
+    border: 1px solid var(--player-border, var(--border-color));
+    border-radius: 12px;
+    padding: 16px;
+    width: 100%;
+    max-width: 600px;
+    margin: 2rem auto;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+.player-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.control-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background-color 0.2s, transform 0.2s;
+    color: var(--player-icon, var(--text-color));
+}
+
+.control-btn:hover {
+    background-color: var(--player-hover, var(--btn-hover));
+}
+
+.control-btn:active {
+    transform: scale(0.95);
+}
+
+.control-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.play-btn {
+    width: 48px;
+    height: 48px;
+    background-color: transparent !important;
+}
+
+.play-btn:hover {
+    background-color: var(--player-hover, var(--btn-hover)) !important;
+}
+
+.play-btn svg,
+.mute-btn svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+}
+
+.mute-btn {
+    width: 32px;
+    height: 32px;
+}
+
+.center-column {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.title-time-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+    color: var(--player-text, var(--text-color));
+    gap: 12px;
+}
+
+.track-title {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.time-display {
+    color: var(--player-text-muted, var(--text-color));
+    font-variant-numeric: tabular-nums;
+    font-size: 0.8125rem;
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+.progress-container,
+.volume-slider-container {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border: none;
+    padding: 0;
+    height: 6px;
+    background: var(--progress-bg);
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: height 0.2s;
+}
+
+.progress-container:hover,
+.volume-slider-container:hover {
+    height: 8px;
+}
+
+.progress-bar,
+.volume-slider {
+    height: 100%;
+    background: var(--progress-fill);
+    border-radius: 3px;
+    transition: width 0.1s linear;
+    position: relative;
+}
+
+.volume-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 120px;
+}
+
+.volume-slider-container {
+    flex-grow: 1;
+    min-width: 60px;
+}
+
+.player-status {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-top: 8px;
+    text-align: center;
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--text-color);
+}
+
+@media (max-width: 640px) {
+    .custom-audio-player {
+        padding: 12px;
+        margin: 1.5rem auto;
+    }
+
+    .player-row {
+        gap: 12px;
+    }
+
+    .play-btn {
+        width: 40px;
+        height: 40px;
+    }
+
+    .control-btn {
+        padding: 6px;
+    }
+
+    .volume-section {
+        min-width: 100px;
+    }
+
+    .track-title {
+        max-width: 150px;
+    }
+}
+
+@media (max-width: 480px) {
+    .player-row {
+        flex-wrap: wrap;
+    }
+
+    .center-column {
+        order: 3;
+        width: 100%;
+        margin-top: 12px;
+    }
+
+    .volume-section {
+        margin-left: auto;
+    }
+
+    .title-time-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .time-display {
+        align-self: flex-end;
+    }
+}
+
+.custom-audio-player svg {
+    fill: currentColor;
+    transition: fill 0.3s ease;
+}
+
+.control-btn:focus-visible,
+.progress-container:focus-visible,
+.volume-slider-container:focus-visible {
+    outline: 2px solid var(--progress-fill);
+    outline-offset: 2px;
+}
