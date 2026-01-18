@@ -747,6 +747,14 @@ pre {
     border-radius: 2px;
 }
 
+.progress-text {
+    color: var(--text-color);
+    font-size: 0.875rem;
+    margin-right: 0.5rem;
+    white-space: nowrap;
+    user-select: none;
+}
+
 .media-container .media-image {
     display: block;
     margin-left: auto;
