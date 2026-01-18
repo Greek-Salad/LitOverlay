@@ -730,7 +730,7 @@ class ChapterLoader {
 
   async scanChapters() {
     this.chapterFiles = [];
-    const maxChapters = 99;
+    const maxChapters = 33;
 
     for (let i = 1; i <= maxChapters; i++) {
       try {
