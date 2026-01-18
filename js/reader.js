@@ -123,10 +123,10 @@ class CustomColorPicker {
         `;
 
     document.body.appendChild(this.popup);
-    this.slCanvas = this.popup.querySelector('.sl-canvas');
-    this.hueSlider = this.popup.querySelector('.hue-slider');
-    this.hueValueSpan = this.popup.querySelector('.hue-value');
-    this.preview = this.popup.querySelector('.color-preview');
+    this.slCanvas = this.popup.querySelector(".sl-canvas");
+    this.hueSlider = this.popup.querySelector(".hue-slider");
+    this.hueValueSpan = this.popup.querySelector(".hue-value");
+    this.preview = this.popup.querySelector(".color-preview");
   }
 
   positionPopup() {
@@ -162,36 +162,36 @@ class CustomColorPicker {
       this.drawSaturationLightnessSquare();
     });
 
-    this.slCanvas.addEventListener('mousedown', (e) => {
+    this.slCanvas.addEventListener("mousedown", (e) => {
+      this.handleCanvasInteraction(e);
+      this.canvasMouseDown = true;
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (this.canvasMouseDown) {
         this.handleCanvasInteraction(e);
-        this.canvasMouseDown = true;
+      }
     });
 
-    document.addEventListener('mousemove', (e) => {
-        if (this.canvasMouseDown) {
-            this.handleCanvasInteraction(e);
-        }
+    document.addEventListener("mouseup", () => {
+      this.canvasMouseDown = false;
     });
 
-    document.addEventListener('mouseup', () => {
-        this.canvasMouseDown = false;
+    this.slCanvas.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      this.handleCanvasInteraction(e.touches[0]);
+      this.canvasMouseDown = true;
     });
 
-    this.slCanvas.addEventListener('touchstart', (e) => {
+    document.addEventListener("touchmove", (e) => {
+      if (this.canvasMouseDown) {
         e.preventDefault();
         this.handleCanvasInteraction(e.touches[0]);
-        this.canvasMouseDown = true;
+      }
     });
 
-    document.addEventListener('touchmove', (e) => {
-        if (this.canvasMouseDown) {
-            e.preventDefault();
-            this.handleCanvasInteraction(e.touches[0]);
-        }
-    });
-
-    document.addEventListener('touchend', () => {
-        this.canvasMouseDown = false;
+    document.addEventListener("touchend", () => {
+      this.canvasMouseDown = false;
     });
 
     const presets = this.popup.querySelectorAll(".color-preset");
@@ -250,7 +250,7 @@ class CustomColorPicker {
   }
 
   drawSaturationLightnessSquare() {
-    const ctx = this.slCanvas.getContext('2d');
+    const ctx = this.slCanvas.getContext("2d");
     const width = this.slCanvas.width;
     const height = this.slCanvas.height;
 
@@ -282,8 +282,8 @@ class CustomColorPicker {
 
     ctx.beginPath();
     ctx.arc(cursorX, cursorY, 4, 0, 2 * Math.PI);
-    ctx.fillStyle = Utils.isDarkColor(this.color) ? 'white' : 'black';
-    ctx.strokeStyle = 'white';
+    ctx.fillStyle = Utils.isDarkColor(this.color) ? "white" : "black";
+    ctx.strokeStyle = "white";
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.fill();
@@ -354,20 +354,22 @@ class CustomColorPicker {
     return {
       r: Math.round(r * 255),
       g: Math.round(g * 255),
-      b: Math.round(b * 255)
+      b: Math.round(b * 255),
     };
   }
 
   hexToRgb(hex) {
-    if (typeof Utils !== 'undefined' && Utils.hexToRgb) {
-        return Utils.hexToRgb(hex);
+    if (typeof Utils !== "undefined" && Utils.hexToRgb) {
+      return Utils.hexToRgb(hex);
     }
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16)
-    } : null;
+    return result
+      ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
+      : null;
   }
 
   rgbToHsl(rgb) {
@@ -377,7 +379,9 @@ class CustomColorPicker {
 
     let max = Math.max(r, g, b);
     let min = Math.min(r, g, b);
-    let h, s, l = (max + min) / 2;
+    let h,
+      s,
+      l = (max + min) / 2;
 
     if (max === min) {
       h = s = 0;
@@ -386,9 +390,15 @@ class CustomColorPicker {
       s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
 
       switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
+        case r:
+          h = (g - b) / d + (g < b ? 6 : 0);
+          break;
+        case g:
+          h = (b - r) / d + 2;
+          break;
+        case b:
+          h = (r - g) / d + 4;
+          break;
       }
 
       h /= 6;
@@ -397,7 +407,7 @@ class CustomColorPicker {
     return {
       h: Math.round(h * 360),
       s: Math.round(s * 100),
-      l: Math.round(l * 100)
+      l: Math.round(l * 100),
     };
   }
 
@@ -572,6 +582,21 @@ class ThemeManager {
         highlightOpacity,
       );
       root.style.setProperty("--highlight-bg", highlightColor);
+
+      const searchBg = this.adjustColor(bgColor, isBgDark ? 0.05 : -0.05);
+      const searchText = textColor;
+      const searchBorder = this.adjustColor(borderColor, isBgDark ? 0.1 : -0.1);
+
+      const linkRgb = this.hexToRgb(linkColor) || { r: 26, g: 115, b: 232 };
+
+      root.style.setProperty("--search-bg", searchBg);
+      root.style.setProperty("--search-text", searchText);
+      root.style.setProperty("--search-border", searchBorder);
+      root.style.setProperty("--search-focus-border", linkColor);
+      root.style.setProperty(
+        "--search-focus-shadow",
+        `rgba(${linkRgb.r}, ${linkRgb.g}, ${linkRgb.b}, 0.2)`,
+      );
 
       const progressBg = this.adjustColor(bgColor, isBgDark ? 0.1 : -0.1);
       const progressFill = this.adjustColor(linkColor, isBgDark ? 0.1 : -0.1);
@@ -803,12 +828,287 @@ class ThemeManager {
     this.applyTheme();
   }
 
+  hexToRgb(hex) {
+    return Utils.hexToRgb(hex);
+  }
+
   getCurrentPreset() {
     return this.currentPreset;
   }
 
   getCustomColors() {
     return { ...this.customColors };
+  }
+}
+
+class SearchManager {
+  constructor() {
+    this.searchInput = null;
+    this.searchPrevBtn = null;
+    this.searchNextBtn = null;
+    this.searchStatus = null;
+
+    this.currentSearch = "";
+    this.searchResults = [];
+    this.currentResultIndex = -1;
+
+    this.init();
+  }
+
+  init() {
+    this.searchInput = document.getElementById("search-input");
+    this.searchPrevBtn = document.getElementById("search-prev");
+    this.searchNextBtn = document.getElementById("search-next");
+    this.searchStatus = document.getElementById("search-status");
+
+    this.setupEventListeners();
+    console.log("✅ SearchManager initialized");
+  }
+
+  setupEventListeners() {
+    if (!this.searchInput) return;
+
+    this.searchInput.addEventListener(
+      "input",
+      Utils.debounce((e) => {
+        this.performSearch(e.target.value);
+      }, 300),
+    );
+
+    this.searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          this.goToPrevResult();
+        } else {
+          this.goToNextResult();
+        }
+      }
+
+      if (e.key === "Escape") {
+        this.clearSearch();
+        this.searchInput.blur();
+      }
+    });
+
+    if (this.searchPrevBtn) {
+      this.searchPrevBtn.addEventListener("click", () => this.goToPrevResult());
+    }
+
+    if (this.searchNextBtn) {
+      this.searchNextBtn.addEventListener("click", () => this.goToNextResult());
+    }
+
+    if (window.readingApp && window.readingApp.chapterLoader) {
+      const originalGoToChapter = window.readingApp.chapterLoader.goToChapter;
+      window.readingApp.chapterLoader.goToChapter = async function (...args) {
+        this.clearSearch();
+        return originalGoToChapter.apply(this, args);
+      }.bind(this);
+    }
+  }
+
+  performSearch(query) {
+    this.clearHighlights();
+
+    if (!query || query.trim() === "") {
+      this.searchResults = [];
+      this.currentResultIndex = -1;
+      this.updateStatus();
+      this.updateButtons();
+      return;
+    }
+
+    this.currentSearch = query.trim();
+    const contentElement = document.getElementById("chapter-content");
+
+    if (!contentElement) {
+      console.warn("SearchManager: No chapter content found");
+      return;
+    }
+
+    this.searchResults = [];
+    const walker = document.createTreeWalker(
+      contentElement,
+      NodeFilter.SHOW_TEXT,
+      null,
+      false,
+    );
+
+    let node;
+    const searchRegex = new RegExp(this.escapeRegex(query), "gi");
+
+    while ((node = walker.nextNode())) {
+      const text = node.textContent;
+      let match;
+
+      while ((match = searchRegex.exec(text)) !== null) {
+        this.searchResults.push({
+          node: node,
+          offset: match.index,
+          length: match[0].length,
+        });
+      }
+    }
+
+    this.highlightAllResults();
+
+    if (this.searchResults.length > 0) {
+      this.currentResultIndex = 0;
+      this.highlightCurrentResult();
+      this.scrollToCurrentResult();
+    } else {
+      this.currentResultIndex = -1;
+    }
+
+    this.updateStatus();
+    this.updateButtons();
+  }
+
+  highlightAllResults() {
+    this.searchResults.forEach((result, index) => {
+      this.highlightResult(result, index === this.currentResultIndex);
+    });
+  }
+
+  highlightResult(result, isCurrent = false) {
+    const span = document.createElement("span");
+    span.className = isCurrent
+      ? "search-current-highlight"
+      : "search-highlight";
+    span.dataset.searchIndex = this.searchResults.indexOf(result);
+
+    const range = document.createRange();
+    range.setStart(result.node, result.offset);
+    range.setEnd(result.node, result.offset + result.length);
+
+    range.surroundContents(span);
+  }
+
+  highlightCurrentResult() {
+    document.querySelectorAll(".search-current-highlight").forEach((el) => {
+      el.className = "search-highlight";
+    });
+
+    if (
+      this.currentResultIndex >= 0 &&
+      this.currentResultIndex < this.searchResults.length
+    ) {
+      const currentHighlight = document.querySelector(
+        `[data-search-index="${this.currentResultIndex}"]`,
+      );
+      if (currentHighlight) {
+        currentHighlight.className = "search-current-highlight";
+      }
+    }
+  }
+
+  goToNextResult() {
+    if (this.searchResults.length === 0) {
+      this.performSearch(this.searchInput.value);
+      return;
+    }
+
+    if (this.searchResults.length > 0) {
+      this.currentResultIndex =
+        (this.currentResultIndex + 1) % this.searchResults.length;
+      this.highlightCurrentResult();
+      this.scrollToCurrentResult();
+      this.updateStatus();
+      this.updateButtons();
+    }
+  }
+
+  goToPrevResult() {
+    if (this.searchResults.length === 0) return;
+
+    if (this.searchResults.length > 0) {
+      this.currentResultIndex =
+        this.currentResultIndex <= 0
+          ? this.searchResults.length - 1
+          : this.currentResultIndex - 1;
+      this.highlightCurrentResult();
+      this.scrollToCurrentResult();
+      this.updateStatus();
+      this.updateButtons();
+    }
+  }
+
+  scrollToCurrentResult() {
+    if (
+      this.currentResultIndex < 0 ||
+      this.currentResultIndex >= this.searchResults.length
+    )
+      return;
+
+    const currentHighlight = document.querySelector(
+      `[data-search-index="${this.currentResultIndex}"]`,
+    );
+    if (currentHighlight) {
+      currentHighlight.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest",
+      });
+
+      currentHighlight.style.animation = "none";
+      setTimeout(() => {
+        currentHighlight.style.animation = "";
+      }, 10);
+    }
+  }
+
+  updateStatus() {
+    if (!this.searchStatus) return;
+
+    if (this.currentSearch === "") {
+      this.searchStatus.textContent = "";
+    } else if (this.searchResults.length === 0) {
+      this.searchStatus.textContent = "Не найдено";
+    } else {
+      this.searchStatus.textContent = `${this.currentResultIndex + 1}/${this.searchResults.length}`;
+    }
+  }
+
+  updateButtons() {
+    if (this.searchPrevBtn && this.searchNextBtn) {
+      this.searchPrevBtn.disabled = this.searchResults.length === 0;
+      this.searchNextBtn.disabled = this.searchResults.length === 0;
+    }
+  }
+
+  clearHighlights() {
+    document
+      .querySelectorAll(".search-highlight, .search-current-highlight")
+      .forEach((el) => {
+        const parent = el.parentNode;
+        if (parent) {
+          parent.replaceChild(document.createTextNode(el.textContent), el);
+          parent.normalize();
+        }
+      });
+  }
+
+  clearSearch() {
+    this.clearHighlights();
+    if (this.searchInput) {
+      this.searchInput.value = "";
+    }
+    this.currentSearch = "";
+    this.searchResults = [];
+    this.currentResultIndex = -1;
+    this.updateStatus();
+    this.updateButtons();
+  }
+
+  escapeRegex(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  refreshSearch() {
+    if (this.currentSearch) {
+      this.performSearch(this.currentSearch);
+    }
   }
 }
 
@@ -841,40 +1141,42 @@ class ChapterLoader {
   }
 
   async loadChapterTitles() {
-      console.log("📚 Loading chapter titles...");
-      this.chapterTitles = {};
+    console.log("📚 Loading chapter titles...");
+    this.chapterTitles = {};
 
-      for (let i = 1; i <= this.totalChapters; i++) {
-          const chapterInfo = this.chapterFiles.find((c) => c.number === i && c.exists);
-          if (!chapterInfo) continue;
+    for (let i = 1; i <= this.totalChapters; i++) {
+      const chapterInfo = this.chapterFiles.find(
+        (c) => c.number === i && c.exists,
+      );
+      if (!chapterInfo) continue;
 
-          try {
-              const response = await fetch(`./chapters/${chapterInfo.filename}`, {
-                  cache: "no-cache",
-                  method: "GET"
-              });
+      try {
+        const response = await fetch(`./chapters/${chapterInfo.filename}`, {
+          cache: "no-cache",
+          method: "GET",
+        });
 
-              if (!response.ok) {
-                  throw new Error(`HTTP ${response.status}`);
-              }
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
 
-              const html = await response.text();
-              const tempDoc = new DOMParser().parseFromString(html, "text/html");
-              const firstH2 = tempDoc.querySelector("h2");
+        const html = await response.text();
+        const tempDoc = new DOMParser().parseFromString(html, "text/html");
+        const firstH2 = tempDoc.querySelector("h2");
 
-              if (firstH2) {
-                  this.chapterTitles[i] = firstH2.textContent.trim();
-                  // console.log(`📚 Title for chapter ${i}: ${this.chapterTitles[i]}`);
-              } else {
-                  this.chapterTitles[i] = `Глава ${i}`;
-                  // console.log(`📚 Title for chapter ${i} not found, using fallback: ${this.chapterTitles[i]}`);
-              }
-          } catch (error) {
-              console.error(`Error loading title for chapter ${i}:`, error);
-              this.chapterTitles[i] = `Глава ${i}`;
-          }
+        if (firstH2) {
+          this.chapterTitles[i] = firstH2.textContent.trim();
+          // console.log(`📚 Title for chapter ${i}: ${this.chapterTitles[i]}`);
+        } else {
+          this.chapterTitles[i] = `Глава ${i}`;
+          // console.log(`📚 Title for chapter ${i} not found, using fallback: ${this.chapterTitles[i]}`);
+        }
+      } catch (error) {
+        console.error(`Error loading title for chapter ${i}:`, error);
+        this.chapterTitles[i] = `Глава ${i}`;
       }
-      console.log("📚 Finished loading chapter titles:", this.chapterTitles);
+    }
+    console.log("📚 Finished loading chapter titles:", this.chapterTitles);
   }
 
   async scanChapters() {
@@ -896,8 +1198,7 @@ class ChapterLoader {
             exists: true,
           });
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     }
 
     this.totalChapters = this.chapterFiles.length;
@@ -1163,7 +1464,8 @@ class ChapterLoader {
     } catch (error) {
       console.error("Error loading chapter:", error);
       if (currentContentElement) {
-        currentContentElement.innerHTML = this.createErrorChapter(chapterNumber);
+        currentContentElement.innerHTML =
+          this.createErrorChapter(chapterNumber);
         this.updateNavigationUI();
       }
     }
@@ -1178,11 +1480,15 @@ class ChapterLoader {
     let nextChapterTitle = `Глава ${this.currentChapter + 1}`;
 
     if (this.currentChapter > 1) {
-        prevChapterTitle = this.chapterTitles[this.currentChapter - 1] || `Глава ${this.currentChapter - 1}`;
+      prevChapterTitle =
+        this.chapterTitles[this.currentChapter - 1] ||
+        `Глава ${this.currentChapter - 1}`;
     }
 
     if (this.currentChapter < this.totalChapters) {
-        nextChapterTitle = this.chapterTitles[this.currentChapter + 1] || `Глава ${this.currentChapter + 1}`;
+      nextChapterTitle =
+        this.chapterTitles[this.currentChapter + 1] ||
+        `Глава ${this.currentChapter + 1}`;
     }
 
     if (prevBtn) {
@@ -1212,7 +1518,9 @@ class ChapterLoader {
     }
 
     if (breadcrumb) {
-      breadcrumb.textContent = this.chapterTitles[this.currentChapter] || `Глава ${this.currentChapter}`;
+      breadcrumb.textContent =
+        this.chapterTitles[this.currentChapter] ||
+        `Глава ${this.currentChapter}`;
     }
   }
 
@@ -1552,6 +1860,7 @@ class ReadingApp {
     this.themeManager = null;
     this.chapterLoader = null;
     this.settingsManager = null;
+    this.searchManager = null;
     this.init();
   }
 
@@ -1562,19 +1871,24 @@ class ReadingApp {
       this.settingsManager = new SettingsManager();
       this.themeManager = new ThemeManager();
       this.chapterLoader = new ChapterLoader();
+      this.searchManager = new SearchManager();
 
       await this.chapterLoader.init();
 
       this.setupUI();
 
-      this.readingAreaElement = document.querySelector('.reading-area');
-      this.progressBarElement = document.getElementById('reading-progress-bar');
+      this.readingAreaElement = document.querySelector(".reading-area");
+      this.progressBarElement = document.getElementById("reading-progress-bar");
 
       if (!this.readingAreaElement) {
-         console.warn("ReadingApp: .reading-area element not found for scroll progress indicator.");
+        console.warn(
+          "ReadingApp: .reading-area element not found for scroll progress indicator.",
+        );
       }
       if (!this.progressBarElement) {
-         console.warn("ReadingApp: #reading-progress-bar element not found for scroll progress indicator.");
+        console.warn(
+          "ReadingApp: #reading-progress-bar element not found for scroll progress indicator.",
+        );
       }
 
       this.setupScrollProgressIndicator();
@@ -1589,23 +1903,27 @@ class ReadingApp {
 
   setupScrollProgressIndicator() {
     if (!this.readingAreaElement || !this.progressBarElement) {
-        console.warn("ReadingApp: Cannot setup scroll progress indicator, elements not found.");
-        return;
+      console.warn(
+        "ReadingApp: Cannot setup scroll progress indicator, elements not found.",
+      );
+      return;
     }
 
     const debouncedUpdateProgress = Utils.debounce(() => {
-        this.updateReadingProgress();
+      this.updateReadingProgress();
     }, 10);
 
-    this.readingAreaElement.addEventListener('scroll', debouncedUpdateProgress);
+    this.readingAreaElement.addEventListener("scroll", debouncedUpdateProgress);
 
     this.updateReadingProgress();
   }
 
   updateReadingProgress() {
     if (!this.readingAreaElement || !this.progressBarElement) {
-        console.warn("ReadingApp: Cannot update scroll progress, elements not found.");
-        return;
+      console.warn(
+        "ReadingApp: Cannot update scroll progress, elements not found.",
+      );
+      return;
     }
 
     const element = this.readingAreaElement;
@@ -1618,17 +1936,19 @@ class ReadingApp {
 
     let scrollPercentage = 0;
     if (maxScrollTop > 0) {
-        scrollPercentage = (scrollTop / maxScrollTop) * 100;
-        scrollPercentage = Math.min(100, Math.max(0, scrollPercentage));
+      scrollPercentage = (scrollTop / maxScrollTop) * 100;
+      scrollPercentage = Math.min(100, Math.max(0, scrollPercentage));
     } else {
-        scrollPercentage = 0;
+      scrollPercentage = 0;
     }
 
     this.progressBarElement.style.width = `${scrollPercentage}%`;
-    const progressTextElement = document.getElementById('reading-progress-text');
+    const progressTextElement = document.getElementById(
+      "reading-progress-text",
+    );
     if (progressTextElement) {
-        const roundedPercentage = Math.round(scrollPercentage);
-        progressTextElement.textContent = `Прочтено: ${roundedPercentage}%`;
+      const roundedPercentage = Math.round(scrollPercentage);
+      progressTextElement.textContent = `Прочтено: ${roundedPercentage}%`;
     }
   }
 
@@ -1677,6 +1997,10 @@ class ReadingApp {
 
   getSettingsManager() {
     return this.settingsManager;
+  }
+
+  getSearchManager() {
+    return this.searchManager;
   }
 }
 
