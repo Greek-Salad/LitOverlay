@@ -864,10 +864,10 @@ class ChapterLoader {
 
               if (firstH2) {
                   this.chapterTitles[i] = firstH2.textContent.trim();
-                  console.log(`📚 Title for chapter ${i}: ${this.chapterTitles[i]}`);
+                  // console.log(`📚 Title for chapter ${i}: ${this.chapterTitles[i]}`);
               } else {
                   this.chapterTitles[i] = `Глава ${i}`;
-                  console.log(`📚 Title for chapter ${i} not found, using fallback: ${this.chapterTitles[i]}`);
+                  // console.log(`📚 Title for chapter ${i} not found, using fallback: ${this.chapterTitles[i]}`);
               }
           } catch (error) {
               console.error(`Error loading title for chapter ${i}:`, error);
@@ -993,7 +993,7 @@ class ChapterLoader {
     if (chapterNumber === 0) {
       return `
             <div class="placeholder-chapter">
-                <h1 class="chapter-title">Загрузка главы...</h1>
+                <h1 class="chapter-title">Загрузка глав...</h1>
                 <div class="loading">
                     <div class="spinner"></div>
                 </div>
