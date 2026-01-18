@@ -64,13 +64,14 @@ class CustomColorPicker {
 
     this.color = this.options.currentColor;
     this.hsl = this.rgbToHsl(this.hexToRgb(this.color));
+    this.canvasMouseDown = false;
     this.init();
   }
 
   init() {
     this.createPopup();
     this.setupEventListeners();
-    this.updateSliders();
+    this.updateCanvasAndSlider();
     this.positionPopup();
   }
 
@@ -85,20 +86,16 @@ class CustomColorPicker {
             <div class="color-picker-body">
                 <div class="color-preview" style="background-color: ${this.color}"></div>
                 <div class="hsl-controls">
-                    <div class="hsl-slider">
+                    <!-- H Slider -->
+                    <div class="h-slider-container">
                         <label>Оттенок (H)</label>
-                        <input type="range" class="hue-slider" min="0" max="360" value="${this.hsl.h}">
+                        <input type="range" class="hue-slider" min="0" max="360" value="${this.hsl.h}" orient="vertical">
                         <span class="hue-value">${this.hsl.h}°</span>
                     </div>
-                    <div class="hsl-slider">
-                        <label>Насыщенность (S)</label>
-                        <input type="range" class="saturation-slider" min="0" max="100" value="${this.hsl.s}">
-                        <span class="saturation-value">${this.hsl.s}%</span>
-                    </div>
-                    <div class="hsl-slider">
-                        <label>Яркость (L)</label>
-                        <input type="range" class="lightness-slider" min="0" max="100" value="${this.hsl.l}">
-                        <span class="lightness-value">${this.hsl.l}%</span>
+                    <!-- Saturation-Lightness Canvas -->
+                    <div class="sl-canvas-container">
+                        <label>Saturation / Lightness</label>
+                        <canvas class="sl-canvas" width="200" height="200"></canvas>
                     </div>
                 </div>
                 <div class="color-presets">
@@ -126,6 +123,10 @@ class CustomColorPicker {
         `;
 
     document.body.appendChild(this.popup);
+    this.slCanvas = this.popup.querySelector('.sl-canvas');
+    this.hueSlider = this.popup.querySelector('.hue-slider');
+    this.hueValueSpan = this.popup.querySelector('.hue-value');
+    this.preview = this.popup.querySelector('.color-preview');
   }
 
   positionPopup() {
@@ -153,25 +154,45 @@ class CustomColorPicker {
   }
 
   setupEventListeners() {
-    const hueSlider = this.popup.querySelector(".hue-slider");
-    const saturationSlider = this.popup.querySelector(".saturation-slider");
-    const lightnessSlider = this.popup.querySelector(".lightness-slider");
-
-    const updateFromSliders = () => {
-      this.hsl = {
-        h: parseInt(hueSlider.value),
-        s: parseInt(saturationSlider.value),
-        l: parseInt(lightnessSlider.value),
-      };
-
+    this.hueSlider.addEventListener("input", (e) => {
+      this.hsl.h = parseInt(e.target.value);
       this.color = this.hslToHex(this.hsl);
       this.updatePreview();
-      this.updateValueDisplays();
-    };
+      this.updateHueValueDisplay();
+      this.drawSaturationLightnessSquare();
+    });
 
-    hueSlider.addEventListener("input", updateFromSliders);
-    saturationSlider.addEventListener("input", updateFromSliders);
-    lightnessSlider.addEventListener("input", updateFromSliders);
+    this.slCanvas.addEventListener('mousedown', (e) => {
+        this.handleCanvasInteraction(e);
+        this.canvasMouseDown = true;
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (this.canvasMouseDown) {
+            this.handleCanvasInteraction(e);
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        this.canvasMouseDown = false;
+    });
+
+    this.slCanvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        this.handleCanvasInteraction(e.touches[0]);
+        this.canvasMouseDown = true;
+    });
+
+    document.addEventListener('touchmove', (e) => {
+        if (this.canvasMouseDown) {
+            e.preventDefault();
+            this.handleCanvasInteraction(e.touches[0]);
+        }
+    });
+
+    document.addEventListener('touchend', () => {
+        this.canvasMouseDown = false;
+    });
 
     const presets = this.popup.querySelectorAll(".color-preset");
     presets.forEach((preset) => {
@@ -209,33 +230,88 @@ class CustomColorPicker {
     });
   }
 
+  handleCanvasInteraction(e) {
+    const rect = this.slCanvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const clampedX = Math.max(0, Math.min(x, this.slCanvas.width));
+    const clampedY = Math.max(0, Math.min(y, this.slCanvas.height));
+
+    const s = Math.round((clampedX / this.slCanvas.width) * 100);
+    const l = Math.round(100 - (clampedY / this.slCanvas.height) * 100);
+
+    this.hsl.s = s;
+    this.hsl.l = l;
+    this.color = this.hslToHex(this.hsl);
+
+    this.updatePreview();
+    this.updateSliders();
+  }
+
+  drawSaturationLightnessSquare() {
+    const ctx = this.slCanvas.getContext('2d');
+    const width = this.slCanvas.width;
+    const height = this.slCanvas.height;
+
+    ctx.clearRect(0, 0, width, height);
+
+    const imageData = ctx.createImageData(width, height);
+    const data = imageData.data;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const index = (y * width + x) * 4;
+
+        const s = (x / (width - 1)) * 100;
+        const l = 100 - (y / (height - 1)) * 100;
+
+        const rgb = this.hslToRgb({ h: this.hsl.h, s: s, l: l });
+
+        data[index] = rgb.r;
+        data[index + 1] = rgb.g;
+        data[index + 2] = rgb.b;
+        data[index + 3] = 255;
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    const cursorX = (this.hsl.s / 100) * width;
+    const cursorY = ((100 - this.hsl.l) / 100) * height;
+
+    ctx.beginPath();
+    ctx.arc(cursorX, cursorY, 4, 0, 2 * Math.PI);
+    ctx.fillStyle = Utils.isDarkColor(this.color) ? 'white' : 'black';
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fill();
+  }
+
+  updateCanvasAndSlider() {
+    this.updateHueValueDisplay();
+    this.updateSliders();
+  }
+
   updatePreview() {
-    const preview = this.popup.querySelector(".color-preview");
-    if (preview) {
-      preview.style.backgroundColor = this.color;
+    if (this.preview) {
+      this.preview.style.backgroundColor = this.color;
     }
   }
 
-  updateValueDisplays() {
-    const hueValue = this.popup.querySelector(".hue-value");
-    const saturationValue = this.popup.querySelector(".saturation-value");
-    const lightnessValue = this.popup.querySelector(".lightness-value");
-
-    if (hueValue) hueValue.textContent = `${this.hsl.h}°`;
-    if (saturationValue) saturationValue.textContent = `${this.hsl.s}%`;
-    if (lightnessValue) lightnessValue.textContent = `${this.hsl.l}%`;
+  updateHueValueDisplay() {
+    if (this.hueValueSpan) {
+      this.hueValueSpan.textContent = `${this.hsl.h}°`;
+    }
   }
 
   updateSliders() {
-    const hueSlider = this.popup.querySelector(".hue-slider");
-    const saturationSlider = this.popup.querySelector(".saturation-slider");
-    const lightnessSlider = this.popup.querySelector(".lightness-slider");
-
-    if (hueSlider) hueSlider.value = this.hsl.h;
-    if (saturationSlider) saturationSlider.value = this.hsl.s;
-    if (lightnessSlider) lightnessSlider.value = this.hsl.l;
-
-    this.updateValueDisplays();
+    if (this.hueSlider) {
+      this.hueSlider.value = this.hsl.h;
+    }
+    this.updateHueValueDisplay();
+    this.drawSaturationLightnessSquare();
   }
 
   setColor(color) {
@@ -245,11 +321,53 @@ class CustomColorPicker {
     this.color = color;
     this.hsl = this.rgbToHsl(rgb);
     this.updatePreview();
-    this.updateSliders();
+    this.updateCanvasAndSlider();
+  }
+
+  hslToRgb(hsl) {
+    let h = hsl.h / 360;
+    let s = hsl.s / 100;
+    let l = hsl.l / 100;
+
+    let r, g, b;
+
+    if (s === 0) {
+      r = g = b = l;
+    } else {
+      const hue2rgb = (p, q, t) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+      };
+
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+
+      r = hue2rgb(p, q, h + 1 / 3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1 / 3);
+    }
+
+    return {
+      r: Math.round(r * 255),
+      g: Math.round(g * 255),
+      b: Math.round(b * 255)
+    };
   }
 
   hexToRgb(hex) {
-    return Utils.hexToRgb(hex);
+    if (typeof Utils !== 'undefined' && Utils.hexToRgb) {
+        return Utils.hexToRgb(hex);
+    }
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : null;
   }
 
   rgbToHsl(rgb) {
@@ -259,9 +377,7 @@ class CustomColorPicker {
 
     let max = Math.max(r, g, b);
     let min = Math.min(r, g, b);
-    let h,
-      s,
-      l = (max + min) / 2;
+    let h, s, l = (max + min) / 2;
 
     if (max === min) {
       h = s = 0;
@@ -270,15 +386,9 @@ class CustomColorPicker {
       s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
 
       switch (max) {
-        case r:
-          h = (g - b) / d + (g < b ? 6 : 0);
-          break;
-        case g:
-          h = (b - r) / d + 2;
-          break;
-        case b:
-          h = (r - g) / d + 4;
-          break;
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
       }
 
       h /= 6;
@@ -287,7 +397,7 @@ class CustomColorPicker {
     return {
       h: Math.round(h * 360),
       s: Math.round(s * 100),
-      l: Math.round(l * 100),
+      l: Math.round(l * 100)
     };
   }
 
