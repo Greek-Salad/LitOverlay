@@ -392,6 +392,65 @@ body {
     margin: 2rem 0 1rem !important;
 }
 
+.chapter-content blockquote {
+    position: relative;
+    padding: 1.5rem 1.5rem 1.5rem 2.5rem;
+    margin: 1.5rem 0;
+    font-style: italic;
+    background-color: var(--quote-bg, var(--highlight-bg));
+    border-left: 4px solid var(--quote-border, var(--link-color));
+    border-radius: 0 8px 8px 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    font-size: 1.05em;
+    line-height: 1.7;
+}
+
+.chapter-content blockquote:before {
+    content: "❝";
+    position: absolute;
+    left: 0.75rem;
+    top: 0.5rem;
+    font-size: 1.8em;
+    color: var(--quote-border, var(--link-color));
+    opacity: 0.5;
+    font-family: serif;
+}
+
+.chapter-content blockquote:after {
+    content: "❞";
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.5rem;
+    font-size: 1.8em;
+    color: var(--quote-border, var(--link-color));
+    opacity: 0.5;
+    font-family: serif;
+}
+
+.chapter-content blockquote p {
+    margin: 0.5rem 0 !important;
+    padding: 0 !important;
+    text-align: left !important;
+    font-style: italic;
+}
+
+.chapter-content blockquote footer,
+.chapter-content blockquote cite {
+    display: block;
+    margin-top: 0.75rem;
+    font-size: 0.9em;
+    font-style: normal;
+    font-weight: 500;
+    color: var(--quote-cite, var(--text-color));
+    text-align: right;
+    opacity: 0.8;
+}
+
+.chapter-content blockquote footer:before {
+    content: "— ";
+}
+
 .chapter-content p.divider-paragraph {
     text-align: center !important;
     font-weight: bold !important;
