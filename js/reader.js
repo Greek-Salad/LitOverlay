@@ -1144,38 +1144,29 @@ class ChapterLoader {
     console.log("📚 Loading chapter titles...");
     this.chapterTitles = {};
 
-    for (let i = 1; i <= this.totalChapters; i++) {
-      const chapterInfo = this.chapterFiles.find(
-        (c) => c.number === i && c.exists,
-      );
-      if (!chapterInfo) continue;
-
+    for (const chapter of this.chapterFiles) {
       try {
-        const response = await fetch(`./chapters/${chapterInfo.filename}`, {
+        const response = await fetch(`./chapters/${chapter.filename}`, {
           cache: "no-cache",
-          method: "GET",
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
+        if (response.ok) {
+          const html = await response.text();
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, "text/html");
+          const h2 = doc.querySelector("h2");
 
-        const html = await response.text();
-        const tempDoc = new DOMParser().parseFromString(html, "text/html");
-        const firstH2 = tempDoc.querySelector("h2");
-
-        if (firstH2) {
-          this.chapterTitles[i] = firstH2.textContent.trim();
-          // console.log(`📚 Title for chapter ${i}: ${this.chapterTitles[i]}`);
-        } else {
-          this.chapterTitles[i] = `Глава ${i}`;
-          // console.log(`📚 Title for chapter ${i} not found, using fallback: ${this.chapterTitles[i]}`);
+          if (h2 && h2.textContent.trim()) {
+            this.chapterTitles[chapter.number] = h2.textContent.trim();
+          } else {
+            this.chapterTitles[chapter.number] = `Глава ${chapter.number}`;
+          }
         }
       } catch (error) {
-        console.error(`Error loading title for chapter ${i}:`, error);
-        this.chapterTitles[i] = `Глава ${i}`;
+        this.chapterTitles[chapter.number] = `Глава ${chapter.number}`;
       }
     }
+
     console.log("📚 Finished loading chapter titles:", this.chapterTitles);
   }
 
@@ -1210,6 +1201,7 @@ class ChapterLoader {
     }
 
     console.log(`📚 Total chapters found: ${this.totalChapters}`);
+    return this.totalChapters;
   }
 
   createPlaceholderChapter() {
@@ -1351,14 +1343,13 @@ class ChapterLoader {
       if (!chapterInfo || !chapterInfo.exists) continue;
 
       const isActive = i === this.currentChapter;
+      const chapterTitle = this.chapterTitles[i] || `Глава ${i}`;
 
       const item = document.createElement("a");
       item.className = `chapter-item ${isActive ? "active" : ""}`;
       item.href = "#";
       item.dataset.chapter = i;
-      item.innerHTML = `
-                <span class="chapter-item-title">Глава ${i}</span>
-            `;
+      item.innerHTML = `<span class="chapter-item-title">${chapterTitle}</span>`;
 
       item.addEventListener("click", (e) => {
         e.preventDefault();
@@ -1395,18 +1386,23 @@ class ChapterLoader {
     if (chapterNumber > this.totalChapters) chapterNumber = this.totalChapters;
 
     const currentContentElement = document.getElementById("chapter-content");
+
     if (currentContentElement && window.mediaInjector) {
       window.mediaInjector.stopAllCurrentPlayers();
     }
 
-    if (
-      this.currentChapter === chapterNumber &&
+    const hasContent =
       currentContentElement &&
       currentContentElement.innerHTML.trim() !== "" &&
-      !currentContentElement.innerHTML.includes("Загрузка главы")
-    ) {
-      console.log(`📖 Already on chapter ${chapterNumber}, skipping reload`);
+      !currentContentElement.innerHTML.includes("Загрузка главы") &&
+      !currentContentElement.innerHTML.includes("Загрузка глав");
+
+    if (this.currentChapter === chapterNumber && hasContent) {
+      console.log(
+        `📖 Already on chapter ${chapterNumber} with content, skipping reload`,
+      );
       this.updateNavigationUI();
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
@@ -1428,16 +1424,18 @@ class ChapterLoader {
       const content = await this.loadChapter(chapterNumber);
 
       if (currentContentElement) {
-        let chapterTitle = `Глава ${chapterNumber}`;
+        let chapterTitle =
+          this.chapterTitles[chapterNumber] || `Глава ${chapterNumber}`;
 
         const tempDoc = new DOMParser().parseFromString(content, "text/html");
         const firstH2 = tempDoc.querySelector("h2");
-
-        if (firstH2) {
+        if (firstH2 && firstH2.textContent.trim()) {
           chapterTitle = firstH2.textContent.trim();
+          this.chapterTitles[chapterNumber] = chapterTitle;
         }
 
         currentContentElement.innerHTML = content;
+
         this.updateNavigationUI();
 
         const breadcrumb = document.getElementById("current-chapter-title");
@@ -2042,8 +2040,12 @@ window.addEventListener("load", () => {
   console.log("🌐 Page fully loaded");
   if (window.readingApp && window.readingApp.chapterLoader) {
     const savedChapter = Utils.loadFromStorage("lastChapter", 1);
-    setTimeout(() => {
-      window.readingApp.chapterLoader.goToChapter(savedChapter);
-    }, 500);
+    const currentChapter = window.readingApp.chapterLoader.getCurrentChapter();
+
+    if (currentChapter !== savedChapter) {
+      setTimeout(() => {
+        window.readingApp.chapterLoader.goToChapter(savedChapter);
+      }, 100);
+    }
   }
 });
