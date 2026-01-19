@@ -1791,10 +1791,10 @@ class SettingsManager {
     );
     document.body.style.fontSize = `${this.settings.fontSize}px`;
 
-    const contentElement = document.getElementById("chapter-content");
-    if (contentElement) {
-      contentElement.style.maxWidth = `${this.settings.textWidth}px`;
-    }
+    document.documentElement.style.setProperty(
+      "--text-width",
+      `${this.settings.textWidth}px`,
+    );
 
     console.log("✅ Applied settings:", this.settings);
   }
