@@ -490,6 +490,26 @@ class ThemeManager {
     console.log("✅ ThemeManager initialized");
   }
 
+  getClosestPreset() {
+    const currentColors = this.customColors;
+    const lightDistance = this.colorDistance(currentColors, this.PRESETS.light);
+    const darkDistance = this.colorDistance(currentColors, this.PRESETS.dark);
+    return lightDistance < darkDistance ? "light" : "dark";
+  }
+
+  colorDistance(color1, color2) {
+    const rgb1 = this.hexToRgb(color1.bg);
+    const rgb2 = this.hexToRgb(color2.bg);
+
+    if (!rgb1 || !rgb2) return Infinity;
+
+    const rDiff = rgb1.r - rgb2.r;
+    const gDiff = rgb1.g - rgb2.g;
+    const bDiff = rgb1.b - rgb2.b;
+
+    return Math.sqrt(rDiff * rDiff + gDiff * gDiff + bDiff * bDiff);
+  }
+
   loadSavedState() {
     const savedPreset = Utils.loadFromStorage("themePreset", "light");
     const savedColors = Utils.loadFromStorage(
@@ -661,9 +681,7 @@ class ThemeManager {
   updateIcons() {
     const isBgDark = Utils.isDarkColor(this.customColors.bg);
     const isTextDark = Utils.isDarkColor(this.customColors.text);
-
     const iconSuffix = isTextDark ? "black" : "white";
-
     const menuIcon = document.getElementById("menu-icon");
     if (menuIcon) {
       menuIcon.src = `./icons/menu-${iconSuffix}.svg`;
@@ -671,10 +689,15 @@ class ThemeManager {
 
     const themeIcon = document.getElementById("theme-icon");
     if (themeIcon) {
-      themeIcon.src = `./icons/${isBgDark ? "sun" : "moon"}.svg`;
+      const newIcon = isBgDark ? "sun" : "moon";
+      themeIcon.src = `./icons/${newIcon}.svg`;
       themeIcon.alt = isBgDark
         ? "Переключить на светлую тему"
         : "Переключить на тёмную тему";
+
+      console.log(
+        `🎨 Theme icon updated to ${newIcon}.svg (isBgDark: ${isBgDark})`,
+      );
     }
   }
 
@@ -773,19 +796,36 @@ class ThemeManager {
   }
 
   togglePreset() {
-    const newPreset = this.currentPreset === "light" ? "dark" : "light";
+    const isBgDark = Utils.isDarkColor(this.customColors.bg);
+    console.log(`🔄 Toggle pressed:`, {
+        currentPreset: this.currentPreset,
+        customColors: this.customColors,
+        isBgDark: isBgDark,
+        bgColor: this.customColors.bg,
+        textColor: this.customColors.text
+    });
+    
+    const newPreset = isBgDark ? "light" : "dark";
+    console.log(`🎯 Switching to: ${newPreset}`);
     this.applyPreset(newPreset);
-  }
+}
 
   applyPreset(preset) {
-    if (!this.PRESETS[preset] || this.currentPreset === preset) return;
+    if (!this.PRESETS[preset]) {
+      console.warn(`Unknown preset: ${preset}`);
+      return;
+    }
+    if (
+      this.currentPreset === preset &&
+      JSON.stringify(this.customColors) === JSON.stringify(this.PRESETS[preset])
+    ) {
+      console.log(`🎯 Already on preset ${preset} with matching colors`);
+      return;
+    }
 
     console.log(`🎯 Applying preset: ${preset}`);
-
     this.currentPreset = preset;
-
     this.customColors = { ...this.PRESETS[preset] };
-
     this.applyTheme();
   }
 
@@ -807,25 +847,31 @@ class ThemeManager {
 
   setCustomColor(type, color) {
     if (!color || this.customColors[type] === color) return;
-
     console.log(`🎨 Setting custom ${type} color: ${color}`);
-
     this.customColors[type] = color;
-
-    const matchesLight =
-      JSON.stringify(this.customColors) === JSON.stringify(this.PRESETS.light);
-    const matchesDark =
-      JSON.stringify(this.customColors) === JSON.stringify(this.PRESETS.dark);
-
+    const matchesLight = this.colorsMatch(
+      this.customColors,
+      this.PRESETS.light,
+    );
+    const matchesDark = this.colorsMatch(this.customColors, this.PRESETS.dark);
     if (matchesLight) {
       this.currentPreset = "light";
+      console.log("🎨 Custom colors match light preset");
     } else if (matchesDark) {
       this.currentPreset = "dark";
+      console.log("🎨 Custom colors match dark preset");
     } else {
       this.currentPreset = "custom";
+      console.log("🎨 Custom colors set, preset is 'custom'");
     }
-
     this.applyTheme();
+  }
+
+  colorsMatch(colors1, colors2) {
+    return (
+      colors1.bg.toLowerCase() === colors2.bg.toLowerCase() &&
+      colors1.text.toLowerCase() === colors2.text.toLowerCase()
+    );
   }
 
   hexToRgb(hex) {
