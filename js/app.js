@@ -45,6 +45,7 @@ class ReadingApp {
       this.isInitialized = true;
       console.log("✅ Reading App fully initialized!");
 
+      this.hideLoadingOverlay();
       window.readingApp = this;
 
       console.log("🔍 Debug info:");
@@ -73,6 +74,7 @@ class ReadingApp {
     } catch (error) {
       console.error("❌ Failed to initialize app:", error);
       this.showErrorState(error);
+      this.hideLoadingOverlay();
     }
   }
 
@@ -193,6 +195,7 @@ class ReadingApp {
   }
 
   showErrorState(error) {
+    this.hideLoadingOverlay();
     const contentElement = document.getElementById("chapter-content");
     if (!contentElement) return;
 
