@@ -6,94 +6,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Читальный движок</title>
     <link rel="icon" href="./favicon.ico" type="image/x-icon">
+
+    <link rel="stylesheet" href="./css/normalize.css">
+    <link rel="stylesheet" href="./css/fonts.css">
     <link rel="stylesheet" href="./css/styles.css">
     <link rel="stylesheet" href="./css/audio-player.css">
     <link rel="stylesheet" href="./css/color-picker.css">
+
     <style>
-        @font-face {
-            font-family: 'Lato';
-            src: url('./fonts/Lato-Regular.woff2') format('woff2');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'Lato';
-            src: url('./fonts/Lato-Bold.woff2') format('woff2');
-            font-weight: bold;
-            font-style: normal;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'Lato';
-            src: url('./fonts/Lato-Italic.woff2') format('woff2');
-            font-weight: normal;
-            font-style: italic;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'Antiqua';
-            src: url('./fonts/Antiqua-Regular.woff2') format('woff2');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'LiberationSans';
-            src: url('./fonts/LiberationSans-Regular.woff2') format('woff2');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'LiberationSerif';
-            src: url('./fonts/LiberationSerif-Regular.woff2') format('woff2');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'Roboto';
-            src: url('./fonts/Roboto-Regular.woff2') format('woff2');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'SourceCodePro';
-            src: url('./fonts/SourceCodePro-Regular.woff2') format('woff2');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'Whitney';
-            src: url('./fonts/Whitney-Regular.woff2') format('woff2');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-        }
-
         body {
-            font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #ffffff;
+            color: #000000;
+            overflow: hidden;
+            height: 100vh;
         }
 
-        :root {
-            --font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            --font-size: 16px;
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #1a73e8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
 
 <body>
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Загрузка читалки...</p>
+    </div>
+
     <aside id="sidebar" class="sidebar">
         <div class="sidebar-header">
             <button id="close-sidebar" class="icon-btn" aria-label="Закрыть меню">
@@ -115,7 +83,7 @@
                     <img id="menu-icon" src="./icons/menu-black.svg" alt="Меню" width="24" height="24">
                 </button>
                 <div class="breadcrumb">
-                    <span id="current-chapter-title">Глава 1</span>
+                    <span id="current-chapter-title">Загрузка...</span>
                 </div>
             </div>
 
@@ -167,17 +135,13 @@
         <div class="reading-area-wrapper">
             <article id="reading-area" class="reading-area">
                 <div id="chapter-content" class="chapter-content" role="article">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>Загрузка глав...</p>
-                    </div>
                 </div>
                 <footer class="chapter-navigation">
                     <button id="prev-chapter" class="nav-btn prev-btn" disabled>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" />
                         </svg>
-                        Предыдущая глава
+                        Начало
                     </button>
                     <button id="next-chapter" class="nav-btn next-btn">
                         Следующая глава
@@ -255,16 +219,39 @@
                     <button class="theme-preset-btn" data-theme="dark">Тёмная</button>
                 </div>
             </div>
+
+            <div class="settings-group">
+                <h4>Межстрочный интервал</h4>
+                <div class="line-height-control">
+                    <label for="line-height">Интервал: <span id="line-height-value">1.6</span></label>
+                    <input type="range" id="line-height" min="1.2" max="2.4" step="0.1" value="1.6"
+                        class="settings-slider">
+                </div>
+                <div class="line-height-presets">
+                    <button class="line-height-preset-btn" data-value="1.4">Плотный</button>
+                    <button class="line-height-preset-btn" data-value="1.6">Стандарт</button>
+                    <button class="line-height-preset-btn" data-value="1.8">Просторный</button>
+                    <button class="line-height-preset-btn" data-value="2.0">Воздушный</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <div id="overlay" class="overlay" aria-hidden="true"></div>
 
-    <script src="./js/media-injector.js"></script>
-    <script src="./js/reader.js"></script>
+    <script type="module" src="./js/app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            window.mediaInjector = new MediaInjector();
+            setTimeout(() => {
+                const loadingOverlay = document.getElementById('loading-overlay');
+                if (loadingOverlay) {
+                    loadingOverlay.style.opacity = '0';
+                    loadingOverlay.style.visibility = 'hidden';
+                    setTimeout(() => {
+                        loadingOverlay.remove();
+                    }, 300);
+                }
+            }, 500);
         });
     </script>
 </body>

@@ -1,0 +1,13 @@
+{
+  "name": "reading-engine",
+  "version": "2.0.0",
+  "description": "Оптимизированный читальный движок",
+  "type": "module",
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "echo 'No build step required for static files'"
+  },
+  "devDependencies": {
+    "serve": "^14.0.0"
+  }
+}

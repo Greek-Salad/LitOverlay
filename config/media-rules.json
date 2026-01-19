@@ -115,7 +115,7 @@
     {
       "id": "image-1",
       "type": "image",
-      "src": ["media/images/meme1.png", "/media/images/meme2.png", "/media/images/meme3.png"],
+      "src": ["media/images/meme1.png", "media/images/meme2.png", "media/images/meme3.png"],
       "format": "image/png",
       "chapter": 22,
       "position": "after",
