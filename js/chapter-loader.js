@@ -163,6 +163,10 @@ class ChapterLoader {
 
       let html = await response.text();
 
+      if (window.hintInjector) {
+        html = await window.hintInjector.injectHints(html, chapterNumber);
+      }
+
       if (window.mediaInjector) {
         html = await window.mediaInjector.injectMedia(html, chapterNumber);
       }
@@ -369,7 +373,11 @@ class ChapterLoader {
             "ChapterLoader: MediaInjector not found when trying to reinitialize players.",
           );
         }
+
         this.refreshActiveChapterInNav();
+        if (window.hintInjector) {
+          window.hintInjector.setupHintTooltips();
+        }
       }
     } catch (error) {
       console.error("Error loading chapter:", error);

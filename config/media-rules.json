@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "lastUpdated": "2024-01-01T12:00:00Z",
+  "lastUpdated": "2026-01-29T19:15:22Z",
   "media": [
     {
       "id": "audio-1",
@@ -104,6 +104,16 @@
     },
     {
       "id": "audio-11",
+      "type": "audio",
+      "title": "Nickelback — Feed The Machine",
+      "src": ["media/audio/feed_the_machine.mp3"],
+      "format": "audio/mpeg",
+      "chapter": 21,
+      "position": "after",
+      "anchor": "а из колонок раздавалась бодрая песня «Feed the Machine» группы Nickelback."
+    },
+    {
+      "id": "audio-12",
       "type": "audio",
       "title": "Jeremy Zuckerman — Agni Kai",
       "src": ["media/audio/agni_kai.mp3"],

@@ -8,7 +8,7 @@ class ThemeManager {
   constructor() {
     this.PRESETS = {
       light: { ...THEME_PRESETS.light },
-      dark: { ...THEME_PRESETS.dark }
+      dark: { ...THEME_PRESETS.dark },
     };
     this.currentPreset = "light";
     this.customColors = { ...THEME_PRESETS.light };
@@ -131,6 +131,12 @@ class ThemeManager {
       "--player-border",
       adjust(bgColor, isBgDark ? 0.15 : -0.15),
     );
+
+    if (isBgDark) {
+      root.style.setProperty("--hint-text-color", "#ffb74d");
+    } else {
+      root.style.setProperty("--hint-text-color", "#d35400");
+    }
   }
 
   adjustColor(color, amount) {
@@ -324,7 +330,12 @@ class ThemeManager {
     );
     const matchesDark = this.colorsMatch(this.customColors, this.PRESETS.dark);
 
-    console.log(`🎨 Matches light:`, matchesLight, `Matches dark:`, matchesDark);
+    console.log(
+      `🎨 Matches light:`,
+      matchesLight,
+      `Matches dark:`,
+      matchesDark,
+    );
 
     if (matchesLight) {
       this.currentPreset = "light";
@@ -341,7 +352,8 @@ class ThemeManager {
   }
 
   colorsMatch(colors1, colors2) {
-    const normalize = (color) => color.toLowerCase().replace(/#/g, "").padStart(6, "0");
+    const normalize = (color) =>
+      color.toLowerCase().replace(/#/g, "").padStart(6, "0");
     return (
       normalize(colors1.bg) === normalize(colors2.bg) &&
       normalize(colors1.text) === normalize(colors2.text)

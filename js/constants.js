@@ -49,6 +49,7 @@ export const CSS_VARS = [
   "--progress-fill",
   "--player-bg",
   "--player-border",
+  "--hint-text-color",
 ];
 
 export const MEDIA_CONFIG_PATH = "./config/media-rules.json";

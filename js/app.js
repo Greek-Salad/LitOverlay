@@ -6,6 +6,7 @@ import SettingsManager from "./settings-manager.js";
 import ChapterLoader from "./chapter-loader.js";
 import SearchManager from "./search-manager.js";
 import MediaInjector from "./media-injector.js";
+import HintInjector from "./hint-injector.js";
 import CustomColorPicker from "./color-picker.js";
 
 class ReadingApp {
@@ -18,6 +19,7 @@ class ReadingApp {
     this.isInitialized = false;
     this.initializationError = null;
     this.themeToggleHandler = null;
+    this.hintInjector = null;
   }
 
   async init() {
@@ -33,6 +35,11 @@ class ReadingApp {
       await this.mediaInjector.init();
 
       window.mediaInjector = this.mediaInjector;
+
+      this.hintInjector = new HintInjector();
+      await this.hintInjector.init();
+
+      window.hintInjector = this.hintInjector;
 
       this.chapterLoader = new ChapterLoader();
       await this.chapterLoader.init();
@@ -152,9 +159,9 @@ class ReadingApp {
   setupScrollProgressIndicator() {
     const readingArea = document.querySelector(".reading-area");
     const progressBar = document.getElementById("reading-progress-bar");
-    const progressText = document.getElementById("reading-progress-text");
+    const progressValue = document.getElementById("reading-progress-value");
 
-    if (!readingArea || !progressBar || !progressText) {
+    if (!readingArea || !progressBar || !progressValue) {
       console.warn("Scroll progress elements not found");
       return;
     }
@@ -172,7 +179,7 @@ class ReadingApp {
       }
 
       progressBar.style.width = `${scrollPercentage}%`;
-      progressText.textContent = `Прочтено: ${Math.round(scrollPercentage)}%`;
+      progressValue.textContent = `${Math.round(scrollPercentage)}%`;
     };
 
     const debouncedUpdate = Utils.debounce(updateProgress, 10);
@@ -246,6 +253,10 @@ class ReadingApp {
 
   getMediaInjector() {
     return this.mediaInjector;
+  }
+
+  getHintInjector() {
+    return this.hintInjector;
   }
 
   // Cleanup method
