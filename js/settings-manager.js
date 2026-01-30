@@ -34,7 +34,6 @@ class SettingsManager {
   }
 
   setupControls() {
-    // Font family
     const fontSelect = document.getElementById("font-family");
     if (fontSelect) {
       fontSelect.value = this.settings.fontFamily;
@@ -43,7 +42,6 @@ class SettingsManager {
       });
     }
 
-    // Font size slider
     this.setupSliderControl(
       "font-size",
       (value) => `${value}px`,
@@ -51,7 +49,6 @@ class SettingsManager {
       this.settings.fontSize
     );
 
-    // Text width slider
     this.setupSliderControl(
       "text-width",
       (value) => `${value}px`,
@@ -59,7 +56,6 @@ class SettingsManager {
       this.settings.textWidth
     );
 
-    // Line height slider
     this.setupSliderControl(
       "line-height",
       (value) => value.toFixed(1),
@@ -67,7 +63,6 @@ class SettingsManager {
       this.settings.lineHeight
     );
 
-    // Line height presets
     document.querySelectorAll(".line-height-preset-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         const value = parseFloat(e.target.dataset.value);
@@ -108,7 +103,6 @@ class SettingsManager {
       updateValue(value);
     });
 
-    // Initial update
     updateValue(initialValue);
   }
 
@@ -199,16 +193,13 @@ class SettingsManager {
   }
 
   applySettings() {
-    // Font family
     this.applyFontFamily();
 
-    // CSS variables
     const root = document.documentElement;
     root.style.setProperty("--font-size", `${this.settings.fontSize}px`);
     root.style.setProperty("--line-height", this.settings.lineHeight.toString());
     root.style.setProperty("--text-width", `${this.settings.textWidth}px`);
 
-    // Body styles
     document.body.style.fontSize = `${this.settings.fontSize}px`;
     document.body.style.lineHeight = this.settings.lineHeight.toString();
 
@@ -218,11 +209,9 @@ class SettingsManager {
   applyFontFamily() {
     const fontFamily = this.settings.fontFamily;
 
-    // Remove existing style if any
     const existingStyle = document.getElementById("dynamic-font-style");
     if (existingStyle) existingStyle.remove();
 
-    // Create new style
     const style = document.createElement("style");
     style.id = "dynamic-font-style";
     style.textContent = `
@@ -242,7 +231,6 @@ class SettingsManager {
     );
   }
 
-  // Setters
   setLineHeight(value) {
     value = parseFloat(value);
     if (this.settings.lineHeight === value) return;
@@ -282,7 +270,6 @@ class SettingsManager {
     this.saveSettings();
   }
 
-  // Getters
   getSettings() {
     return { ...this.settings };
   }

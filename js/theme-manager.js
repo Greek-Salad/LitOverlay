@@ -273,14 +273,11 @@ class ThemeManager {
   }
 
   togglePreset() {
-    // Если текущая схема - кастомная, переключаем на противоположную из стандартных
     if (this.currentPreset === "custom") {
-      // Проверяем, ближе ли текущие цвета к светлой или тёмной
       const isBgDark = Utils.isDarkColor(this.customColors.bg);
       const newPreset = isBgDark ? "light" : "dark";
       this.applyPreset(newPreset);
     } else {
-      // Если текущая схема - стандартная, просто переключаем между light/dark
       const newPreset = this.currentPreset === "light" ? "dark" : "light";
       this.applyPreset(newPreset);
     }

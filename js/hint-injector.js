@@ -66,15 +66,12 @@ class HintInjector {
           `✅ Found text to replace: "${hintRule.text}" in paragraph: "${originalText.substring(0, 50)}..."`,
         );
 
-        // Создаём временный div для безопасной обработки
         const tempDiv = document.createElement("div");
         tempDiv.innerHTML = p.innerHTML;
 
-        // Заменяем текст с сохранением остальной разметки
         const fullText = tempDiv.textContent;
         const regex = new RegExp(Utils.escapeRegex(hintRule.text), "g");
 
-        // Заменяем только текстовое содержимое, сохраняя разметку
         const newHTML = this.replaceTextWithHint(
           fullText,
           hintRule.text,
@@ -89,10 +86,8 @@ class HintInjector {
   }
 
   replaceTextWithHint(fullText, searchText, hintText, originalHTML) {
-    // Простая замена в HTML с учётом разметки
     const regex = new RegExp(Utils.escapeRegex(searchText), "g");
 
-    // Экранируем кавычки в hintText для безопасности
     const safeHintText = this.escapeHtml(hintText);
 
     return originalHTML.replace(
@@ -111,12 +106,10 @@ class HintInjector {
   }
 
   setupHintTooltips() {
-    // Удаляем старые обработчики
     document.querySelectorAll("u[data-hint]").forEach((u) => {
       u.removeEventListener("mouseenter", this.handleHintMouseEnter);
     });
 
-    // Назначаем новые
     document.querySelectorAll("u[data-hint]").forEach((u) => {
       u.addEventListener("mouseenter", (e) => this.handleHintMouseEnter(e));
     });
@@ -125,70 +118,80 @@ class HintInjector {
   handleHintMouseEnter(event) {
     const u = event.currentTarget;
     const hint = u.getAttribute("data-hint");
-    const tooltip = u.nextElementSibling?.classList.contains("hint-tooltip")
-      ? u.nextElementSibling
-      : null;
+    const rect = u.getBoundingClientRect();
 
-    if (!tooltip) {
-      const tooltipEl = document.createElement("div");
-      tooltipEl.className = "hint-tooltip";
-      tooltipEl.textContent = hint;
+    const tempTooltip = document.createElement("div");
+    tempTooltip.textContent = hint;
+    const maxWidth = window.innerWidth <= 768 ? window.innerWidth * 0.6 : 500;
 
-      // Применяем стили для измерения
-      Object.assign(tooltipEl.style, {
-        position: "absolute",
-        visibility: "hidden",
-        pointerEvents: "none",
-        zIndex: "-1",
-        whiteSpace: "nowrap",
-        padding: "0.25rem 0.5rem",
-        fontSize: "0.8rem",
-        fontFamily: getComputedStyle(u).fontFamily,
-        fontWeight: getComputedStyle(u).fontWeight,
-      });
+    Object.assign(tempTooltip.style, {
+      position: "absolute",
+      visibility: "hidden",
+      pointerEvents: "none",
+      zIndex: "-1",
+      whiteSpace: "nowrap",
+      padding: "0.25rem 0.5rem",
+      fontSize: "0.8rem",
+      fontFamily: getComputedStyle(u).fontFamily,
+      fontWeight: getComputedStyle(u).fontWeight,
+    });
 
-      document.body.appendChild(tooltipEl);
+    document.body.appendChild(tempTooltip);
+    const singleLineWidth = tempTooltip.offsetWidth;
+    tempTooltip.remove();
 
-      const width = tooltipEl.offsetWidth;
-      const maxWidth = window.innerWidth <= 768 ? window.innerWidth * 0.6 : 500;
+    const tooltipEl = document.createElement("div");
+    tooltipEl.className = "dynamic-hint-tooltip";
+    tooltipEl.textContent = hint;
 
-      if (width > maxWidth) {
-        tooltipEl.style.whiteSpace = "normal";
-        tooltipEl.style.maxWidth = window.innerWidth <= 768 ? "60%" : "500px";
-      } else {
-        tooltipEl.style.maxWidth = "none";
-      }
+    const isSingleLine = singleLineWidth <= maxWidth;
+    const widthForStyling = isSingleLine ? "fit-content" : maxWidth + "px";
 
-      tooltipEl.style.visibility = "visible";
-      tooltipEl.style.zIndex = "1000";
-      tooltipEl.style.position = "absolute";
-      tooltipEl.style.background =
-        getComputedStyle(u).getPropertyValue("--sidebar-bg");
-      tooltipEl.style.color =
-        getComputedStyle(u).getPropertyValue("--sidebar-text");
-      tooltipEl.style.borderRadius = "0.25rem";
-      tooltipEl.style.boxShadow =
-        getComputedStyle(u).getPropertyValue("--shadow");
-      tooltipEl.style.border =
-        "1px solid " + getComputedStyle(u).getPropertyValue("--border-color");
+    Object.assign(tooltipEl.style, {
+      position: "absolute",
+      top: rect.top + window.scrollY - 10 + "px",
+      zIndex: "1000",
+      background: getComputedStyle(u).getPropertyValue("--sidebar-bg"),
+      color: getComputedStyle(u).getPropertyValue("--sidebar-text"),
+      padding: "0.25rem 0.5rem",
+      borderRadius: "0.25rem",
+      fontSize: "0.8rem",
+      fontFamily: getComputedStyle(u).fontFamily,
+      fontWeight: getComputedStyle(u).fontWeight,
+      boxShadow: getComputedStyle(u).getPropertyValue("--shadow"),
+      border:
+        "1px solid " + getComputedStyle(u).getPropertyValue("--border-color"),
+      maxWidth: maxWidth + "px",
+      whiteSpace: isSingleLine ? "nowrap" : "normal",
+      wordWrap: isSingleLine ? "normal" : "break-word",
+      textAlign: "center",
+      pointerEvents: "none",
+      width: widthForStyling,
+    });
 
-      const rect = u.getBoundingClientRect();
-      tooltipEl.style.top = rect.top + window.scrollY - 10 + "px";
-      tooltipEl.style.left = rect.left + rect.width / 2 + window.scrollX + "px";
-      tooltipEl.style.transform = "translate(-50%, -100%)";
+    document.body.appendChild(tooltipEl);
 
-      // Добавляем класс для стилей
-      tooltipEl.classList.add("dynamic-hint-tooltip");
+    const tooltipWidth = tooltipEl.offsetWidth;
+    const targetCenterX = rect.left + rect.width / 2 + window.scrollX;
 
-      // Удаляем при mouseleave
-      u.addEventListener(
-        "mouseleave",
-        () => {
-          if (tooltipEl.parentNode) tooltipEl.remove();
-        },
-        { once: true },
-      );
+    let finalLeft = targetCenterX - tooltipWidth / 2;
+
+    if (finalLeft < 10) {
+      finalLeft = 10;
+    } else if (finalLeft + tooltipWidth > window.innerWidth - 10) {
+      finalLeft = window.innerWidth - 10 - tooltipWidth;
     }
+
+    tooltipEl.style.left = finalLeft + "px";
+    tooltipEl.style.transform = "translateY(-100%)";
+
+    u.addEventListener(
+      "mouseleave",
+      () => {
+        if (tooltipEl.parentNode) tooltipEl.remove();
+      },
+      { once: true },
+    );
   }
 }
 

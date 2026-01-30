@@ -62,12 +62,10 @@ class ReadingApp {
       console.log("- SearchManager:", this.searchManager ? "OK" : "NULL");
       console.log("- MediaInjector:", this.mediaInjector ? "OK" : "NULL");
 
-      // Проверка текущей главы
       if (this.chapterLoader) {
         const chapter = this.chapterLoader.getCurrentChapter();
         console.log(`- Current chapter: ${chapter}`);
 
-        // Проверка медиа для текущей главы
         if (this.mediaInjector) {
           const mediaRules = this.mediaInjector.mediaRules.filter(
             (r) => r.chapter === chapter,
@@ -185,17 +183,14 @@ class ReadingApp {
     const debouncedUpdate = Utils.debounce(updateProgress, 10);
     readingArea.addEventListener("scroll", debouncedUpdate);
 
-    // Initial update
     updateProgress();
   }
 
   setupErrorHandling() {
-    // Global error handler
     window.addEventListener("error", (event) => {
       console.error("Global error:", event.error);
     });
 
-    // Unhandled promise rejection handler
     window.addEventListener("unhandledrejection", (event) => {
       console.error("Unhandled promise rejection:", event.reason);
     });
@@ -234,7 +229,6 @@ class ReadingApp {
     contentElement.innerHTML = errorHTML;
   }
 
-  // Public API methods
   getThemeManager() {
     return this.themeManager;
   }
@@ -259,7 +253,6 @@ class ReadingApp {
     return this.hintInjector;
   }
 
-  // Cleanup method
   cleanup() {
     if (this.mediaInjector) {
       this.mediaInjector.cleanup();
@@ -270,14 +263,24 @@ class ReadingApp {
   }
 }
 
-// Initialize app when DOM is ready
+function setupIOSAudioHandling() {
+  if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+    document.addEventListener('touchstart', () => {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      audioContext.resume().then(() => {
+        audioContext.close();
+      }).catch(e => console.log('AudioContext init:', e));
+    }, { once: true });
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   console.log("📄 DOM loaded, starting app...");
 
-  // Создаём и запускаем app с обработкой ошибок
+  setupIOSAudioHandling();
+
   const app = new ReadingApp();
 
-  // Запускаем с небольшим таймаутом, чтобы гарантировать готовность DOM
   setTimeout(() => {
     app.init().catch((error) => {
       console.error("App initialization failed:", error);
@@ -286,7 +289,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }, 100);
 
-  // Debug helpers (only in development)
   if (
     window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1"
@@ -309,14 +311,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// Handle page visibility changes
 document.addEventListener("visibilitychange", () => {
   if (document.hidden && window.readingApp?.mediaInjector) {
     window.readingApp.mediaInjector.stopAllCurrentPlayers();
   }
 });
 
-// Clean up before page unload
 window.addEventListener("beforeunload", () => {
   if (window.readingApp) {
     window.readingApp.mediaInjector?.stopAllCurrentPlayers();

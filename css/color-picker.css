@@ -83,6 +83,7 @@
     flex-direction: column;
     align-items: center;
     gap: 5px;
+    width: 200px;
 }
 
 .h-slider-container label {
@@ -260,7 +261,7 @@
 
 .apply-btn {
     background: var(--link-color);
-    color: white;
+    color: var(--bg-color);
     border: 1px solid var(--link-color);
 }
 

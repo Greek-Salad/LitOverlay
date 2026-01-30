@@ -62,7 +62,7 @@ class ChapterLoader {
 
   async scanChapters() {
     this.chapterFiles = [];
-    const maxChapters = 33; // Максимум 33 главы как в оригинале
+    const maxChapters = 33;
 
     for (let i = 1; i <= maxChapters; i++) {
       try {
@@ -80,7 +80,7 @@ class ChapterLoader {
           });
         }
       } catch (error) {
-        // Игнорируем ошибки
+        console.log(`Chapter ${i} not found.`);
       }
     }
 
@@ -483,7 +483,6 @@ class ChapterLoader {
   isParagraphHighlightable(paragraph) {
     const text = paragraph.textContent.trim();
 
-    // Проверяем на разделители
     if (
       text === "***" ||
       text === "---" ||
@@ -527,7 +526,6 @@ class ChapterLoader {
     const h2Elements = contentElement.querySelectorAll("h2");
     h2Elements.forEach((h2) => {
       h2.style.textAlign = "center";
-      h2.style.margin = "1rem 0";
       h2.classList.add("centered-heading");
     });
 

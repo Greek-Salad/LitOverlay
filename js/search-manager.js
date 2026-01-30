@@ -134,7 +134,6 @@ class SearchManager {
 
   highlightResult(result, isCurrent = false) {
     try {
-      // Проверяем, что узел существует и offset корректен
       if (!result.node || !result.node.parentNode) {
         return;
       }
@@ -147,7 +146,6 @@ class SearchManager {
         return;
       }
 
-      // Корректируем длину если нужно
       const maxLength = nodeLength - result.offset;
       const length = Math.min(result.length, maxLength);
 
@@ -164,7 +162,6 @@ class SearchManager {
       range.surroundContents(span);
     } catch (error) {
       console.error("Error highlighting search result:", error);
-      // Игнорируем ошибку, продолжаем поиск
     }
   }
 

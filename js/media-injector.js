@@ -53,10 +53,9 @@ class MediaInjector {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
 
-    // Обрабатываем правила асинхронно
     for (const rule of chapterRules) {
       console.log(`🔧 Applying rule:`, rule);
-      await this.applyRule(doc, rule); // await потому что createMediaElement асинхронный
+      await this.applyRule(doc, rule);
     }
 
     return doc.body.innerHTML;
@@ -83,7 +82,6 @@ class MediaInjector {
       return;
     }
 
-    // Дополнительная проверка
     if (!(mediaElement instanceof Node)) {
       console.error(`❌ Media element is not a valid Node:`, mediaElement);
       return;
@@ -130,12 +128,10 @@ class MediaInjector {
         return null;
     }
 
-    // Если внутренний элемент не создан успешно, возвращаем null
     if (!innerElement) {
       return null;
     }
 
-    // Для обоих типов mediaElement - это container, который уже содержит внутренние элементы
     return container;
   }
 
@@ -146,11 +142,9 @@ class MediaInjector {
       return null;
     }
 
-    // Set container styles
     if (rule.width) container.style.width = rule.width;
     if (rule.height) container.style.height = rule.height;
 
-    // Load images
     const loadPromises = imagePaths.map((path, index) => {
       return this.loadImageElement(path, rule, index);
     });
@@ -162,7 +156,6 @@ class MediaInjector {
       if (img) {
         container.appendChild(img);
         hasValidImages = true;
-        // Add spacer between images (except after last)
         if (index < imageElements.length - 1) {
           const spacer = Utils.createElement("div");
           spacer.style.height = "1rem";
@@ -186,7 +179,6 @@ class MediaInjector {
     if (rule.width) img.style.width = rule.width;
     if (rule.height) img.style.height = rule.height;
 
-    // Handle loading errors
     img.onerror = () => {
       console.error(`❌ Failed to load image: ${normalizedPath}`);
       img.style.display = "none";
@@ -218,24 +210,19 @@ class MediaInjector {
     audio.preload = "metadata";
     audio.src = normalizedPath;
 
-    // Store audio instance
     this.audioPlayers.set(normalizedPath, audio);
 
-    // Создаём HTML для плеера
     const playerHTML = this.createAudioPlayerHTML(
       normalizedPath,
       rule.title || "Аудиофайл",
     );
 
-    // Заполняем container
     container.innerHTML = playerHTML;
 
-    // Находим созданные элементы
     const playerContainer = container.querySelector(".custom-audio-player");
     if (playerContainer) {
       console.log(`✅ Audio player container created`);
       this.setupAudioPlayerControls(playerContainer, audio, normalizedPath);
-      // Возвращаем container, который теперь содержит плеер
       return container;
     } else {
       console.error(`❌ Audio player container not found in HTML`);
@@ -303,9 +290,19 @@ class MediaInjector {
     const volumeSlider = playerElement.querySelector(".volume-slider");
     const statusDiv = playerElement.querySelector(".player-status");
 
-    if (!playBtn || !progressContainer || !muteBtn) {
+    if (!playBtn || !progressContainer) {
       console.error("Critical control elements not found in player");
       return;
+    }
+
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    const supportsVolumeControl = typeof audio.volume !== "undefined" && !isIOS;
+
+    if (!supportsVolumeControl && muteBtn) {
+      const volumeSection = playerElement.querySelector(".volume-section");
+      if (volumeSection) {
+        volumeSection.style.display = "none";
+      }
     }
 
     let isPlaying = false;
@@ -313,7 +310,6 @@ class MediaInjector {
     let volume = 0.7;
     let updateInterval = null;
 
-    // Format time helper
     const formatTime = (seconds) => {
       if (isNaN(seconds) || seconds <= 0) return "0:00";
       const mins = Math.floor(seconds / 60);
@@ -321,7 +317,6 @@ class MediaInjector {
       return `${mins}:${secs.toString().padStart(2, "0")}`;
     };
 
-    // Update progress bar and time
     const updateProgress = () => {
       if (!audio.duration || isNaN(audio.duration)) {
         timeDisplay.textContent = "0:00 / 0:00";
@@ -334,19 +329,17 @@ class MediaInjector {
       timeDisplay.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
     };
 
-    // Update button states
     const updateButtonStates = () => {
       if (playIcon && pauseIcon) {
         playIcon.style.display = isPlaying ? "none" : "block";
         pauseIcon.style.display = isPlaying ? "block" : "none";
       }
-      if (volumeIcon && mutedIcon) {
+      if (volumeIcon && mutedIcon && supportsVolumeControl) {
         volumeIcon.style.display = isMuted ? "none" : "block";
         mutedIcon.style.display = isMuted ? "block" : "none";
       }
     };
 
-    // Show status message
     const showStatus = (message, color = "#2196f3", timeout = 2000) => {
       if (statusDiv) {
         statusDiv.style.display = "block";
@@ -361,19 +354,16 @@ class MediaInjector {
       }
     };
 
-    // Hide status
     const hideStatus = () => {
       if (statusDiv) {
         statusDiv.style.display = "none";
       }
     };
 
-    // Event Listeners
     const onPlay = () => {
       isPlaying = true;
       updateButtonStates();
 
-      // Start progress updates
       if (updateInterval) clearInterval(updateInterval);
       updateInterval = setInterval(updateProgress, 100);
     };
@@ -406,7 +396,6 @@ class MediaInjector {
       onPause();
     };
 
-    // Audio event listeners
     audio.addEventListener("play", onPlay);
     audio.addEventListener("pause", onPause);
     audio.addEventListener("ended", onEnded);
@@ -418,7 +407,6 @@ class MediaInjector {
     });
     audio.addEventListener("canplay", hideStatus);
 
-    // Button event listeners
     playBtn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -444,35 +432,39 @@ class MediaInjector {
       updateProgress();
     });
 
-    muteBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+    if (supportsVolumeControl && muteBtn) {
+      muteBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
 
-      isMuted = !isMuted;
-      audio.muted = isMuted;
-      updateButtonStates();
-    });
+        isMuted = !isMuted;
+        audio.muted = isMuted;
+        updateButtonStates();
+      });
 
-    volumeSliderContainer.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+      if (volumeSliderContainer) {
+        volumeSliderContainer.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
 
-      const rect = volumeSliderContainer.getBoundingClientRect();
-      const percent = (e.clientX - rect.left) / rect.width;
-      volume = Utils.clamp(percent, 0, 1);
+          const rect = volumeSliderContainer.getBoundingClientRect();
+          const percent = (e.clientX - rect.left) / rect.width;
+          volume = Utils.clamp(percent, 0, 1);
+          audio.volume = volume;
+          audio.muted = false;
+          isMuted = false;
+          volumeSlider.style.width = `${volume * 100}%`;
+          updateButtonStates();
+        });
+      }
+    }
+
+    if (supportsVolumeControl) {
       audio.volume = volume;
-      audio.muted = false;
-      isMuted = false;
-      volumeSlider.style.width = `${volume * 100}%`;
-      updateButtonStates();
-    });
-
-    // Initial setup
-    audio.volume = volume;
+    }
     updateButtonStates();
     updateProgress();
 
-    // Update icons for current theme
     if (this.themeManager) {
       this.themeManager.updateAudioPlayerIconsForElement(playerElement);
     }
@@ -481,14 +473,12 @@ class MediaInjector {
   normalizePath(path) {
     if (!path) return "";
 
-    // Убираем лишние слэши в начале
     let normalized = path.trim();
 
     if (normalized.startsWith("/")) {
-      normalized = "." + normalized; // Делаем относительным
+      normalized = "." + normalized;
     }
 
-    // Если путь уже начинается с ./ или http, оставляем как есть
     if (
       normalized.startsWith("./") ||
       normalized.startsWith("http://") ||
@@ -498,7 +488,6 @@ class MediaInjector {
       return normalized;
     }
 
-    // Иначе добавляем ./
     return "./" + normalized;
   }
 
@@ -532,12 +521,10 @@ class MediaInjector {
         return;
       }
 
-      // Re-setup controls (they were removed by cloneNode in ChapterLoader)
       this.setupAudioPlayerControls(playerElement, audio, audioPath);
     });
   }
 
-  // Cleanup method to prevent memory leaks
   cleanup() {
     for (const [path, audio] of this.audioPlayers.entries()) {
       audio.pause();
