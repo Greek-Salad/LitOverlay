@@ -123,6 +123,16 @@
       "anchor": "Несколько секунд поиска в Интернете — и он включил трек."
     },
     {
+      "id": "audio-13",
+      "type": "audio",
+      "title": "Zombiez — Dunkelheit",
+      "src": ["media/audio/dunkelheit.mp3"],
+      "format": "audio/mpeg",
+      "chapter": 28,
+      "position": "after",
+      "anchor": "Музыка должна помочь. Она всегда помогает"
+    },
+    {
       "id": "image-1",
       "type": "image",
       "src": ["media/images/meme1.png", "media/images/meme2.png", "media/images/meme3.png"],
