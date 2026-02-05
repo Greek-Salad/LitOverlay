@@ -340,13 +340,15 @@ img#theme-icon {
 }
 
 .chapter-list::-webkit-scrollbar,
-.settings-content::-webkit-scrollbar {
+.settings-content::-webkit-scrollbar,
+.lyrics-content::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 .chapter-list::-webkit-scrollbar-track,
-.settings-content::-webkit-scrollbar-track {
+.settings-content::-webkit-scrollbar-track,
+.lyrics-content::-webkit-scrollbar-track {
   background-color: transparent;
   border-radius: 4px;
 }
@@ -658,6 +660,66 @@ img#theme-icon {
   width: 100%;
   height: 100%;
   border-radius: 0.25rem;
+}
+
+.lyrics-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100%;
+  background-color: var(--settings-bg);
+  border-left: 1px solid var(--border-color);
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow);
+}
+
+.lyrics-panel.open {
+  transform: translateX(0);
+}
+
+.lyrics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.lyrics-header h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--settings-text);
+}
+
+.close-lyrics-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--settings-text);
+  font-size: 1.5rem;
+  padding: 0.25rem;
+  border-radius: 50%;
+}
+
+.close-lyrics-btn:hover {
+  background-color: var(--btn-hover);
+}
+
+.lyrics-content {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  color: var(--settings-text);
+  white-space: pre-line;
+  font-family: var(--font-family);
+  line-height: 1.5;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent !important;
 }
 
 .theme-switcher {

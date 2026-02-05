@@ -32,11 +32,14 @@ class ReadingApp {
     try {
       this.settingsManager = new SettingsManager();
       this.themeManager = new ThemeManager();
-      
+
       this.audioManager = new AudioManager();
       window.audioManager = this.audioManager;
 
-      this.mediaInjector = new MediaInjector(this.themeManager, this.audioManager);
+      this.mediaInjector = new MediaInjector(
+        this.themeManager,
+        this.audioManager,
+      );
       await this.mediaInjector.init();
 
       window.mediaInjector = this.mediaInjector;
@@ -126,6 +129,27 @@ class ReadingApp {
 
   setupUI() {
     this.setupMenu();
+    this.setupLyricsPanel();
+  }
+
+  setupLyricsPanel() {
+    const lyricsPanel = document.getElementById("lyrics-panel");
+    const closeBtn = document.getElementById("close-lyrics-btn");
+    const overlay = document.getElementById("overlay");
+
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => {
+        lyricsPanel.classList.remove("open");
+        if (overlay) overlay.classList.remove("visible");
+      });
+    }
+
+    if (overlay) {
+      overlay.addEventListener("click", () => {
+        lyricsPanel.classList.remove("open");
+        overlay.classList.remove("visible");
+      });
+    }
   }
 
   setupMenu() {
@@ -181,7 +205,7 @@ class ReadingApp {
         scrollPercentage = Math.min(100, Math.max(0, scrollPercentage));
       }
 
-      progressBar.style.setProperty('--progress-width', `${scrollPercentage}%`);
+      progressBar.style.setProperty("--progress-width", `${scrollPercentage}%`);
       progressValue.textContent = `${Math.round(scrollPercentage)}%`;
     };
 
@@ -270,12 +294,21 @@ class ReadingApp {
 
 function setupIOSAudioHandling() {
   if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-    document.addEventListener('touchstart', () => {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      audioContext.resume().then(() => {
-        audioContext.close();
-      }).catch(e => console.log('AudioContext init:', e));
-    }, { once: true });
+    document.addEventListener(
+      "touchstart",
+      () => {
+        const audioContext = new (
+          window.AudioContext || window.webkitAudioContext
+        )();
+        audioContext
+          .resume()
+          .then(() => {
+            audioContext.close();
+          })
+          .catch((e) => console.log("AudioContext init:", e));
+      },
+      { once: true },
+    );
   }
 }
 

@@ -100,6 +100,52 @@ class MediaInjector {
     console.log(`✅ Media element inserted`);
   }
 
+  async openLyricsPanel(audioPath, trackTitle) {
+    const panel = document.getElementById("lyrics-panel");
+    const content = document.getElementById("lyrics-content");
+
+    if (!panel || !content) {
+      console.error("Lyrics panel or content not found");
+      return;
+    }
+
+    content.textContent = "Загрузка...";
+
+    const rule = this.mediaRules.find(
+      (r) => r.src && r.src.some((s) => s.includes(audioPath.split("/").pop())),
+    );
+
+    if (rule && rule.lyrics) {
+      if (typeof rule.lyrics === "string") {
+        if (rule.lyrics.endsWith(".txt") || rule.lyrics.endsWith(".lrc")) {
+          try {
+            const response = await fetch(rule.lyrics);
+            if (response.ok) {
+              content.textContent = await response.text();
+            } else {
+              content.textContent = "Ошибка загрузки текста.";
+            }
+          } catch (e) {
+            content.textContent = "Ошибка загрузки текста.";
+          }
+        } else {
+          content.textContent = rule.lyrics;
+        }
+      } else {
+        content.textContent = "Текст недоступен.";
+      }
+    } else {
+      content.textContent = "Текст недоступен.";
+    }
+
+    panel.classList.add("open");
+
+    const overlay = document.getElementById("overlay");
+    if (overlay) {
+      overlay.classList.add("visible");
+    }
+  }
+
   findParagraphByText(doc, searchText) {
     const paragraphs = doc.querySelectorAll("p");
     for (const paragraph of paragraphs) {
@@ -213,7 +259,6 @@ class MediaInjector {
 
     this.audioPlayers.set(normalizedPath, audio);
 
-    // Используем упрощённый лаунчер для вставки в текст
     const playerHTML = this.createAudioPlayerHTML(
       normalizedPath,
       rule.title || "Аудиофайл",
@@ -225,8 +270,6 @@ class MediaInjector {
     if (playerContainer) {
       console.log(`✅ Audio player container created`);
 
-      // Определяем, это лаунчер или полноценный плеер
-      // ВСЕ аудио в тексте теперь лаунчеры
       if (playerContainer.classList.contains("audio-launcher")) {
         this.setupAudioLauncher(
           playerContainer,
@@ -235,7 +278,6 @@ class MediaInjector {
           rule.title || "Аудиофайл",
         );
       } else {
-        // Резервная логика для полноценных плееров (если где-то остались)
         this.setupAudioPlayerControls(
           playerContainer,
           audio,
@@ -252,10 +294,8 @@ class MediaInjector {
   }
 
   createAudioPlayerHTML(audioPath, title) {
-    // Разделяем исполнителя и название
     const [artist, trackName] = this.splitTrackInfo(title);
 
-    // ВСЕГДА создаём лаунчер для вставки в текст
     return `
     <div class="audio-player-container">
       <div class="custom-audio-player audio-launcher" data-audio-path="${audioPath}" data-original-title="${Utils.escapeHtml(title)}">
@@ -273,6 +313,13 @@ class MediaInjector {
             <div class="launcher-artist">${artist || "Исполнитель"}</div>
             <div class="launcher-title">${trackName || "Название трека"}</div>
           </div>
+
+          <button class="control-btn lyrics-btn" aria-label="Показать текст" title="Показать текст">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+              <path d="M14 3.5L18.5 8H14V3.5z"/>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -288,7 +335,6 @@ class MediaInjector {
   }
 
   setupAudioLauncher(playerElement, audio, audioPath, trackTitle) {
-    // Находим элементы лаунчера
     const playBtn = playerElement.querySelector(".play-btn");
     const playIcon = playerElement.querySelector(".play-icon");
     const pauseIcon = playerElement.querySelector(".pause-icon");
@@ -323,7 +369,6 @@ class MediaInjector {
       isPlaying = true;
       updateButton();
 
-      // Уведомляем AudioManager
       if (this.audioManager) {
         this.audioManager.registerAudioPlayer(audio, {
           title: trackTitle,
@@ -345,12 +390,10 @@ class MediaInjector {
       audio.currentTime = 0;
     };
 
-    // Навешиваем обработчики
     audio.addEventListener("play", onPlay);
     audio.addEventListener("pause", onPause);
     audio.addEventListener("ended", onEnded);
 
-    // Обработчик клика
     playBtn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -358,7 +401,6 @@ class MediaInjector {
       if (isPlaying) {
         audio.pause();
       } else {
-        // Останавливаем все другие аудио перед запуском
         this.stopAllCurrentPlayersExcept(audio);
         audio.play().catch((err) => {
           console.error("Play error:", err);
@@ -366,10 +408,16 @@ class MediaInjector {
       }
     });
 
-    // Инициализация кнопки
+    const lyricsBtn = playerElement.querySelector(".lyrics-btn");
+    if (lyricsBtn) {
+      lyricsBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.openLyricsPanel(audioPath, trackTitle);
+      });
+    }
+
     updateButton();
 
-    // Регистрируем в AudioManager сразу
     if (this.audioManager) {
       this.audioManager.registerAudioPlayer(audio, {
         title: trackTitle,
@@ -509,7 +557,6 @@ class MediaInjector {
       if (updateInterval) clearInterval(updateInterval);
       updateInterval = setInterval(updateProgress, 100);
 
-      // Уведомляем AudioManager о начале воспроизведения
       if (this.audioManager) {
         this.audioManager.registerAudioPlayer(audio, {
           title: trackTitle,

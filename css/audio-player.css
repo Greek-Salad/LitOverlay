@@ -196,12 +196,10 @@
   white-space: nowrap;
 }
 
-/* Desktop and tablets */
 @media (min-width: 769px) {
-  /* Оставляем как есть */
+  
 }
 
-/* Mobile devices */
 @media (max-width: 768px) {
   .custom-audio-player {
     padding: 0.75rem;
@@ -234,7 +232,6 @@
     max-width: 120px;
   }
 
-  /* Скрываем регулятор громкости на мобильных */
   .volume-section {
     display: none !important;
   }
@@ -249,7 +246,6 @@
     min-height: 0.5rem;
   }
 
-  /* Отключаем выделение текста при свайпе */
   .custom-audio-player {
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -274,7 +270,6 @@
   }
 }
 
-/* Very small screens */
 @media (max-width: 480px) {
   .custom-audio-player {
     padding: 0.5rem;
@@ -316,7 +311,6 @@
   }
 }
 
-/* Tiny screens */
 @media (max-width: 360px) {
   .track-title {
     display: none;

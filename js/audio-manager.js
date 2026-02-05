@@ -7,7 +7,7 @@ class AudioManager {
     this.activeAudio = null;
     this.currentTrack = null;
     this.isDropdownOpen = false;
-    this.audioPlayers = new Map(); // Хранилище всех аудиоплееров
+    this.audioPlayers = new Map();
     this.init();
   }
 
@@ -22,8 +22,6 @@ class AudioManager {
     this.audioToggle = document.getElementById("audio-toggle");
     this.audioIcon = document.getElementById("audio-icon");
     this.audioDropdown = document.getElementById("audio-dropdown");
-
-    // Элементы дропдауна
     this.audioPlayBtn = this.audioDropdown?.querySelector(".audio-play-btn");
     this.playIcon = this.audioDropdown?.querySelector(".play-icon");
     this.pauseIcon = this.audioDropdown?.querySelector(".pause-icon");
@@ -52,13 +50,11 @@ class AudioManager {
     this.audioPlayerMain =
       this.audioDropdown?.querySelector(".audio-player-main");
 
-    // Элементы навигации (если есть)
     this.audioPrevBtn = this.audioDropdown?.querySelector(".audio-prev-btn");
     this.audioNextBtn = this.audioDropdown?.querySelector(".audio-next-btn");
   }
 
   setupEventListeners() {
-    // Открытие/закрытие дропдауна
     if (this.audioToggle) {
       this.audioToggle.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -66,7 +62,6 @@ class AudioManager {
       });
     }
 
-    // Закрытие дропдауна
     const closeBtn = document.getElementById("close-audio-dropdown");
     if (closeBtn) {
       closeBtn.addEventListener("click", (e) => {
@@ -75,7 +70,6 @@ class AudioManager {
       });
     }
 
-    // Закрытие при клике вне дропдауна
     document.addEventListener("click", (e) => {
       if (
         this.isDropdownOpen &&
@@ -86,7 +80,6 @@ class AudioManager {
       }
     });
 
-    // Управление плеером в дропдауне
     if (this.audioPlayBtn) {
       this.audioPlayBtn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -115,7 +108,6 @@ class AudioManager {
       });
     }
 
-    // Навигация по трекам (если есть кнопки)
     if (this.audioPrevBtn) {
       this.audioPrevBtn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -133,7 +125,6 @@ class AudioManager {
 
   setupKeyboardControls() {
     document.addEventListener("keydown", (e) => {
-      // Space для play/pause (только не в полях ввода)
       if (
         e.code === "Space" &&
         !e.target.matches("input, textarea, [contenteditable]")
@@ -142,19 +133,16 @@ class AudioManager {
         this.togglePlayback();
       }
 
-      // Ctrl+→ для следующего трека
       if (e.ctrlKey && e.code === "ArrowRight") {
         e.preventDefault();
         this.playNextTrack();
       }
 
-      // Ctrl+← для предыдущего трека
       if (e.ctrlKey && e.code === "ArrowLeft") {
         e.preventDefault();
         this.playPreviousTrack();
       }
 
-      // M для mute/unmute
       if (
         e.code === "KeyM" &&
         !e.target.matches("input, textarea, [contenteditable]")
@@ -165,12 +153,8 @@ class AudioManager {
     });
   }
 
-  // ===== РЕГИСТРАЦИЯ И УПРАВЛЕНИЕ ПЛЕЕРАМИ =====
-
   registerAudioPlayer(audioElement, trackInfo) {
     const playerId = trackInfo.path || `audio-${Date.now()}`;
-
-    // Сохраняем в хранилище
     this.audioPlayers.set(playerId, {
       audio: audioElement,
       track: trackInfo,
@@ -178,7 +162,6 @@ class AudioManager {
       isPlaying: false,
     });
 
-    // Если это первый плеер или он уже играет, делаем его активным
     if (!this.activeAudio || !audioElement.paused) {
       console.log(
         `🎵 Setting active player on registration: ${playerId} (Playing: ${!audioElement.paused})`,
@@ -186,14 +169,12 @@ class AudioManager {
       this.setActivePlayer(playerId);
     }
 
-    // Навешиваем обработчики
     this.setupAudioListeners(audioElement, playerId);
 
     console.log(
       `🎵 Audio player registered: ${trackInfo.title} (ID: ${playerId})`,
     );
 
-    // Обновляем UI лаунчера, если он есть
     if (trackInfo.isLauncher && trackInfo.element) {
       this.updateLauncherUI(trackInfo.element, !audioElement.paused);
     }
@@ -203,7 +184,6 @@ class AudioManager {
     const playerData = this.audioPlayers.get(playerId);
     if (!playerData) return;
 
-    // Останавливаем предыдущий активный плеер
     if (this.activeAudio && this.activeAudio !== playerData.audio) {
       this.stopActiveAudio();
     }
@@ -212,13 +192,8 @@ class AudioManager {
     this.currentTrack = playerData.track;
     playerData.isPlaying = !playerData.audio.paused;
 
-    // Показываем иконку в тулбаре
     this.showAudioIcon();
-
-    // Обновляем дропдаун
     this.updateDropdown();
-
-    // Синхронизируем UI всех плееров
     this.syncAllPlayersUI();
 
     console.log(`🎵 Active player set: ${playerId}`);
@@ -255,13 +230,10 @@ class AudioManager {
     });
   }
 
-  // ===== СИНХРОНИЗАЦИЯ UI =====
-
   syncAllPlayersUI() {
     const isPlaying = this.activeAudio ? !this.activeAudio.paused : false;
     const activePath = this.currentTrack?.path;
 
-    // Обновляем все лаунчеры
     const launchers = document.querySelectorAll(".audio-launcher");
     launchers.forEach((launcher) => {
       const audioPath = launcher.getAttribute("data-audio-path");
@@ -270,7 +242,6 @@ class AudioManager {
       this.updateLauncherUI(launcher, isActive && isPlaying);
     });
 
-    // Обновляем все полноценные плееры
     const fullPlayers = document.querySelectorAll(
       ".custom-audio-player:not(.audio-launcher)",
     );
@@ -325,12 +296,9 @@ class AudioManager {
     timeDisplay.textContent = `${this.formatTime(currentTime)} / ${this.formatTime(duration)}`;
   }
 
-  // ===== УПРАВЛЕНИЕ ВОСПРОИЗВЕДЕНИЕМ =====
-
   playActiveAudio() {
     if (!this.activeAudio) return;
 
-    // Останавливаем все другие аудио
     this.stopAllOtherPlayers();
 
     this.activeAudio.play().catch((err) => {
@@ -358,8 +326,6 @@ class AudioManager {
     if (this.activeAudio) {
       this.activeAudio.pause();
       this.activeAudio.currentTime = 0;
-
-      // Обновляем UI
       this.updatePlayButton(false);
       this.syncAllPlayersUI();
 
@@ -368,7 +334,6 @@ class AudioManager {
   }
 
   stopAllOtherPlayers() {
-    // Останавливаем все аудио, кроме активного
     for (const [id, playerData] of this.audioPlayers.entries()) {
       if (playerData.audio !== this.activeAudio && !playerData.audio.paused) {
         playerData.audio.pause();
@@ -377,15 +342,12 @@ class AudioManager {
       }
     }
 
-    // Также вызываем остановку через MediaInjector
     if (window.mediaInjector) {
       window.mediaInjector.stopAllCurrentPlayersExcept(this.activeAudio);
     }
 
     this.syncAllPlayersUI();
   }
-
-  // ===== НАВИГАЦИЯ ПО ТРЕКАМ =====
 
   playNextTrack() {
     const playerIds = Array.from(this.audioPlayers.keys());
@@ -414,8 +376,6 @@ class AudioManager {
       this.playActiveAudio();
     }
   }
-
-  // ===== УПРАВЛЕНИЕ ГРОМКОСТЬЮ =====
 
   toggleMute() {
     if (!this.activeAudio || !this.volumeIcon || !this.mutedIcon) return;
@@ -446,8 +406,6 @@ class AudioManager {
     }
   }
 
-  // ===== УПРАВЛЕНИЕ ПРОГРЕССОМ =====
-
   seekAudio(event) {
     if (!this.activeAudio || !this.audioProgressContainer) return;
 
@@ -471,8 +429,6 @@ class AudioManager {
 
     this.audioTimeDisplay.textContent = `${this.formatTime(currentTime)} / ${this.formatTime(duration)}`;
   }
-
-  // ===== УПРАВЛЕНИЕ ДРОПДАУНОМ =====
 
   toggleDropdown() {
     if (this.isDropdownOpen) {
@@ -520,22 +476,15 @@ class AudioManager {
     }
 
     this.showAudioPlayer();
-
-    // Обновляем информацию о треке
     if (this.audioArtist && this.audioTitle) {
       const [artist, title] = this.splitTrackInfo(this.currentTrack.title);
       this.audioArtist.textContent = artist;
       this.audioTitle.textContent = title;
     }
 
-    // Обновляем кнопку воспроизведения
     this.updatePlayButton(!this.activeAudio.paused);
-
-    // Обновляем прогресс
     this.updateProgress();
   }
-
-  // ===== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ =====
 
   splitTrackInfo(trackString) {
     const parts = trackString.split(" — ");
@@ -587,14 +536,11 @@ class AudioManager {
     }
   }
 
-  // ===== ОЧИСТКА ПРИ ПЕРЕКЛЮЧЕНИИ ГЛАВ =====
-
   cleanup() {
     this.stopActiveAudio();
     this.hideAudioIcon();
     this.closeDropdown();
 
-    // Очищаем хранилище, но не полностью (для возможности восстановления)
     this.activeAudio = null;
     this.currentTrack = null;
 
