@@ -8,6 +8,10 @@ class ChapterLoader {
     this.totalChapters = 0;
     this.chapterFiles = [];
     this.chapterTitles = {};
+
+    if (window.hintInjector) {
+      window.hintInjector.cleanup();
+    }
   }
 
   async init() {
@@ -62,7 +66,7 @@ class ChapterLoader {
 
   async scanChapters() {
     this.chapterFiles = [];
-    const maxChapters = 33;
+    const maxChapters = 36;
 
     for (let i = 1; i <= maxChapters; i++) {
       try {
@@ -81,6 +85,7 @@ class ChapterLoader {
         }
       } catch (error) {
         console.log(`Chapter ${i} not found.`);
+        break;
       }
     }
 
@@ -249,6 +254,9 @@ class ChapterLoader {
 
       item.addEventListener("click", (e) => {
         e.preventDefault();
+        if (window.hintInjector) {
+          window.hintInjector.cleanup();
+        }
         this.goToChapter(i);
 
         if (window.innerWidth < 768) {
@@ -299,6 +307,14 @@ class ChapterLoader {
     chapterNumber = parseInt(chapterNumber);
     if (chapterNumber < 1) chapterNumber = 1;
     if (chapterNumber > this.totalChapters) chapterNumber = this.totalChapters;
+
+    if (window.hintInjector) {
+      window.hintInjector.cleanup();
+    }
+
+    if (window.audioManager) {
+      window.audioManager.cleanup();
+    }
 
     const currentContentElement = document.getElementById("chapter-content");
 

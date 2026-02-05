@@ -4,11 +4,12 @@ import Utils from "./utils.js";
 import { MEDIA_TYPES, MEDIA_CONFIG_PATH } from "./constants.js";
 
 class MediaInjector {
-  constructor(themeManager = null) {
+  constructor(themeManager = null, audioManager = null) {
     this.mediaRules = [];
     this.audioPlayers = new Map();
     this.contentParser = new DOMParser();
     this.themeManager = themeManager;
+    this.audioManager = audioManager;
     this.initialized = false;
   }
 
@@ -212,6 +213,7 @@ class MediaInjector {
 
     this.audioPlayers.set(normalizedPath, audio);
 
+    // Используем упрощённый лаунчер для вставки в текст
     const playerHTML = this.createAudioPlayerHTML(
       normalizedPath,
       rule.title || "Аудиофайл",
@@ -222,7 +224,26 @@ class MediaInjector {
     const playerContainer = container.querySelector(".custom-audio-player");
     if (playerContainer) {
       console.log(`✅ Audio player container created`);
-      this.setupAudioPlayerControls(playerContainer, audio, normalizedPath);
+
+      // Определяем, это лаунчер или полноценный плеер
+      // ВСЕ аудио в тексте теперь лаунчеры
+      if (playerContainer.classList.contains("audio-launcher")) {
+        this.setupAudioLauncher(
+          playerContainer,
+          audio,
+          normalizedPath,
+          rule.title || "Аудиофайл",
+        );
+      } else {
+        // Резервная логика для полноценных плееров (если где-то остались)
+        this.setupAudioPlayerControls(
+          playerContainer,
+          audio,
+          normalizedPath,
+          rule.title || "Аудиофайл",
+        );
+      }
+
       return container;
     } else {
       console.error(`❌ Audio player container not found in HTML`);
@@ -231,48 +252,153 @@ class MediaInjector {
   }
 
   createAudioPlayerHTML(audioPath, title) {
+    // Разделяем исполнителя и название
+    const [artist, trackName] = this.splitTrackInfo(title);
+
+    // ВСЕГДА создаём лаунчер для вставки в текст
     return `
-      <div class="audio-player-container">
-        <div class="custom-audio-player" data-audio-path="${audioPath}">
-          <div class="player-row">
-            <button class="control-btn play-btn" aria-label="Воспроизведение" type="button">
-              <svg class="play-icon" width="24" height="24" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
-              <svg class="pause-icon" width="24" height="24" viewBox="0 0 24 24" style="display: none;">
-                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-              </svg>
-            </button>
-            <div class="center-column">
-              <div class="title-time-row">
-                <span class="track-title">${title}</span>
-                <span class="time-display">0:00 / 0:00</span>
-              </div>
-              <div class="progress-container" aria-label="Перемотка трека">
-                <div class="progress-bar"></div>
-              </div>
-            </div>
-            <div class="volume-section">
-              <button class="control-btn mute-btn" aria-label="Отключить звук" type="button">
-                <svg class="volume-icon" width="20" height="20" viewBox="0 0 24 24">
-                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c-2.89-.86-5-3.54-5-6.71s2.11-5.85 5-6.71z"/>
-                </svg>
-                <svg class="muted-icon" width="20" height="20" viewBox="0 0 24 24" style="display: none;">
-                  <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
-                </svg>
-              </button>
-              <div class="volume-slider-container" aria-label="Регулировка громкости">
-                <div class="volume-slider"></div>
-              </div>
-            </div>
+    <div class="audio-player-container">
+      <div class="custom-audio-player audio-launcher" data-audio-path="${audioPath}" data-original-title="${Utils.escapeHtml(title)}">
+        <div class="launcher-row">
+          <button class="control-btn play-btn" aria-label="Воспроизведение" type="button">
+            <svg class="play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+            <svg class="pause-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+            </svg>
+          </button>
+          
+          <div class="launcher-info">
+            <div class="launcher-artist">${artist || "Исполнитель"}</div>
+            <div class="launcher-title">${trackName || "Название трека"}</div>
           </div>
-          <div class="player-status" style="display: none;">Загрузка...</div>
         </div>
       </div>
-    `;
+    </div>
+  `;
   }
 
-  setupAudioPlayerControls(playerElement, audio, audioPath) {
+  splitTrackInfo(trackString) {
+    const parts = trackString.split(" — ");
+    if (parts.length >= 2) {
+      return [parts[0], parts.slice(1).join(" — ")];
+    }
+    return ["", trackString];
+  }
+
+  setupAudioLauncher(playerElement, audio, audioPath, trackTitle) {
+    // Находим элементы лаунчера
+    const playBtn = playerElement.querySelector(".play-btn");
+    const playIcon = playerElement.querySelector(".play-icon");
+    const pauseIcon = playerElement.querySelector(".pause-icon");
+    const artistElement = playerElement.querySelector(".launcher-artist");
+    const titleElement = playerElement.querySelector(".launcher-title");
+
+    if (!playBtn) {
+      console.error("Play button not found in launcher");
+      return;
+    }
+
+    let isPlaying = false;
+
+    const [artist, title] = this.splitTrackInfo(trackTitle);
+    if (artistElement) {
+      artistElement.textContent =
+        artist && artist.trim() ? artist : "Неизвестный исполнитель";
+    }
+    if (titleElement) {
+      titleElement.textContent =
+        title && title.trim() ? title : "Неизвестный трек";
+    }
+
+    const updateButton = () => {
+      if (playIcon && pauseIcon) {
+        playIcon.style.display = isPlaying ? "none" : "block";
+        pauseIcon.style.display = isPlaying ? "block" : "none";
+      }
+    };
+
+    const onPlay = () => {
+      isPlaying = true;
+      updateButton();
+
+      // Уведомляем AudioManager
+      if (this.audioManager) {
+        this.audioManager.registerAudioPlayer(audio, {
+          title: trackTitle,
+          path: audioPath,
+          element: playerElement,
+          isLauncher: true,
+        });
+      }
+    };
+
+    const onPause = () => {
+      isPlaying = false;
+      updateButton();
+    };
+
+    const onEnded = () => {
+      isPlaying = false;
+      updateButton();
+      audio.currentTime = 0;
+    };
+
+    // Навешиваем обработчики
+    audio.addEventListener("play", onPlay);
+    audio.addEventListener("pause", onPause);
+    audio.addEventListener("ended", onEnded);
+
+    // Обработчик клика
+    playBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (isPlaying) {
+        audio.pause();
+      } else {
+        // Останавливаем все другие аудио перед запуском
+        this.stopAllCurrentPlayersExcept(audio);
+        audio.play().catch((err) => {
+          console.error("Play error:", err);
+        });
+      }
+    });
+
+    // Инициализация кнопки
+    updateButton();
+
+    // Регистрируем в AudioManager сразу
+    if (this.audioManager) {
+      this.audioManager.registerAudioPlayer(audio, {
+        title: trackTitle,
+        path: audioPath,
+        element: playerElement,
+        isLauncher: true,
+      });
+    }
+
+    if (this.audioManager) {
+      this.audioManager.registerAudioPlayer(audio, {
+        title: trackTitle,
+        path: audioPath,
+        element: playerElement,
+        isLauncher: true,
+      });
+    }
+  }
+
+  stopAllCurrentPlayersExcept(currentAudio) {
+    for (const [path, audio] of this.audioPlayers.entries()) {
+      if (audio !== currentAudio && !audio.paused) {
+        audio.pause();
+        console.log(`MediaInjector: Stopped other audio: ${path}`);
+      }
+    }
+  }
+
+  setupAudioPlayerControls(playerElement, audio, audioPath, trackTitle) {
     const playBtn = playerElement.querySelector(".play-btn");
     const playIcon = playerElement.querySelector(".play-icon");
     const pauseIcon = playerElement.querySelector(".pause-icon");
@@ -289,6 +415,22 @@ class MediaInjector {
     );
     const volumeSlider = playerElement.querySelector(".volume-slider");
     const statusDiv = playerElement.querySelector(".player-status");
+
+    if (playerElement.classList.contains("audio-launcher")) {
+      console.log(
+        "⚠️ Лаунчер попал в setupAudioPlayerControls, перенаправляем...",
+      );
+      if (trackTitle) {
+        this.setupAudioLauncher(playerElement, audio, audioPath, trackTitle);
+      } else {
+        const registeredPlayer = this.audioManager?.getRegisteredAudioPlayer?.(
+          audio.src,
+        );
+        const titleToUse = registeredPlayer?.title || "Неизвестный трек";
+        this.setupAudioLauncher(playerElement, audio, audio.src, titleToUse);
+      }
+      return;
+    }
 
     if (!playBtn || !progressContainer) {
       console.error("Critical control elements not found in player");
@@ -366,6 +508,15 @@ class MediaInjector {
 
       if (updateInterval) clearInterval(updateInterval);
       updateInterval = setInterval(updateProgress, 100);
+
+      // Уведомляем AudioManager о начале воспроизведения
+      if (this.audioManager) {
+        this.audioManager.registerAudioPlayer(audio, {
+          title: trackTitle,
+          path: audioPath,
+          element: playerElement,
+        });
+      }
     };
 
     const onPause = () => {
@@ -468,6 +619,14 @@ class MediaInjector {
     if (this.themeManager) {
       this.themeManager.updateAudioPlayerIconsForElement(playerElement);
     }
+
+    if (this.audioManager) {
+      this.audioManager.registerAudioPlayer(audio, {
+        title: trackTitle,
+        path: audioPath,
+        element: playerElement,
+      });
+    }
   }
 
   normalizePath(path) {
@@ -521,7 +680,19 @@ class MediaInjector {
         return;
       }
 
-      this.setupAudioPlayerControls(playerElement, audio, audioPath);
+      if (playerElement.classList.contains("audio-launcher")) {
+        const originalTitle =
+          playerElement.getAttribute("data-original-title") ||
+          "Неизвестный трек";
+        this.setupAudioLauncher(playerElement, audio, audioPath, originalTitle);
+      } else {
+        this.setupAudioPlayerControls(
+          playerElement,
+          audio,
+          audioPath,
+          "Неизвестный трек",
+        );
+      }
     });
   }
 

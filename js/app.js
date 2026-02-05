@@ -7,6 +7,7 @@ import ChapterLoader from "./chapter-loader.js";
 import SearchManager from "./search-manager.js";
 import MediaInjector from "./media-injector.js";
 import HintInjector from "./hint-injector.js";
+import AudioManager from "./audio-manager.js";
 import CustomColorPicker from "./color-picker.js";
 
 class ReadingApp {
@@ -20,6 +21,7 @@ class ReadingApp {
     this.initializationError = null;
     this.themeToggleHandler = null;
     this.hintInjector = null;
+    this.audioManager = null;
   }
 
   async init() {
@@ -30,8 +32,11 @@ class ReadingApp {
     try {
       this.settingsManager = new SettingsManager();
       this.themeManager = new ThemeManager();
+      
+      this.audioManager = new AudioManager();
+      window.audioManager = this.audioManager;
 
-      this.mediaInjector = new MediaInjector(this.themeManager);
+      this.mediaInjector = new MediaInjector(this.themeManager, this.audioManager);
       await this.mediaInjector.init();
 
       window.mediaInjector = this.mediaInjector;
@@ -176,7 +181,7 @@ class ReadingApp {
         scrollPercentage = Math.min(100, Math.max(0, scrollPercentage));
       }
 
-      progressBar.style.width = `${scrollPercentage}%`;
+      progressBar.style.setProperty('--progress-width', `${scrollPercentage}%`);
       progressValue.textContent = `${Math.round(scrollPercentage)}%`;
     };
 

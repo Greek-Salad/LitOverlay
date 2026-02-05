@@ -20,6 +20,7 @@ class ThemeManager {
     this.loadSavedState();
     this.applyTheme();
     this.setupEventListeners();
+    this.updateThemeSwitcherLocation();
     console.log("✅ ThemeManager initialized");
   }
 
@@ -86,7 +87,10 @@ class ThemeManager {
       "--sidebar-bg",
       adjust(bgColor, isBgDark ? 0.05 : -0.05),
     );
-    root.style.setProperty("--sidebar-text", textColor);
+    root.style.setProperty(
+      "--sidebar-text",
+      adjust(textColor, isBgDark ? 0.2 : -0.2),
+    );
 
     root.style.setProperty(
       "--settings-bg",
@@ -110,6 +114,11 @@ class ThemeManager {
       adjust(bgColor, isBgDark ? 0.15 : -0.15),
     );
 
+    root.style.setProperty(
+      "--toolbar-border",
+      adjust(bgColor, isBgDark ? 0.1 : -0.1),
+    );
+
     const isTextDark = Utils.isDarkColor(textColor);
     const linkColor = adjust(textColor, isTextDark ? -0.3 : 0.3);
     root.style.setProperty("--link-color", linkColor);
@@ -124,7 +133,6 @@ class ThemeManager {
       "--progress-bg",
       adjust(bgColor, isBgDark ? 0.1 : -0.1),
     );
-    root.style.setProperty("--progress-fill", linkColor);
 
     root.style.setProperty("--player-bg", bgColor);
     root.style.setProperty(
@@ -169,21 +177,28 @@ class ThemeManager {
 
   updateIcons() {
     const isBgDark = Utils.isDarkColor(this.customColors.bg);
-    const iconSuffix = isBgDark ? "white" : "black";
+
+    let themeIconClass = "";
+
+    if (this.currentPreset === "custom") {
+      themeIconClass = isBgDark ? "show-sun" : "show-moon";
+    } else {
+      themeIconClass = this.currentPreset === "dark" ? "show-sun" : "show-moon";
+    }
 
     const menuIcon = document.getElementById("menu-icon");
-    if (menuIcon) {
-      menuIcon.src = `./icons/menu-${iconSuffix}.svg`;
+    if (menuIcon && menuIcon.tagName === "svg") {
+      menuIcon.style.stroke = isBgDark ? "#ffffff" : "#000000";
     }
+    this.updateThemeIconByClass(themeIconClass);
+  }
 
-    const themeIcon = document.getElementById("theme-icon");
-    if (themeIcon) {
-      const newIcon = isBgDark ? "sun" : "moon";
-      themeIcon.src = `./icons/${newIcon}.svg`;
-      themeIcon.alt = isBgDark
-        ? "Переключить на светлую тему"
-        : "Переключить на тёмную тему";
-    }
+  updateThemeIconByClass(themeIconClass) {
+    const themeIconSvg = document.getElementById("theme-icon");
+    if (!themeIconSvg) return;
+
+    themeIconSvg.classList.remove("show-sun", "show-moon");
+    themeIconSvg.classList.add(themeIconClass);
   }
 
   updateAudioPlayerIcons() {
@@ -270,6 +285,10 @@ class ThemeManager {
         this.openCustomColorPicker("text");
       });
     }
+
+    window.addEventListener("resize", () => {
+      this.updateThemeSwitcherLocation();
+    });
   }
 
   togglePreset() {
@@ -355,6 +374,28 @@ class ThemeManager {
       normalize(colors1.bg) === normalize(colors2.bg) &&
       normalize(colors1.text) === normalize(colors2.text)
     );
+  }
+
+  updateThemeSwitcherLocation() {
+    const themeSwitcher = document.querySelector(".theme-switcher");
+    const mobileThemeSwitcher = document.querySelector(
+      ".mobile-theme-switcher",
+    );
+    const themeToggle = document.getElementById("theme-toggle");
+
+    if (!themeSwitcher || !mobileThemeSwitcher || !themeToggle) return;
+
+    const isMobile = window.innerWidth <= 768;
+
+    if (isMobile) {
+      if (themeToggle.parentNode !== mobileThemeSwitcher) {
+        mobileThemeSwitcher.appendChild(themeToggle);
+      }
+    } else {
+      if (themeToggle.parentNode !== themeSwitcher) {
+        themeSwitcher.appendChild(themeToggle);
+      }
+    }
   }
 
   getCurrentPreset() {
