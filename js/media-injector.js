@@ -663,10 +663,6 @@ class MediaInjector {
     updateButtonStates();
     updateProgress();
 
-    if (this.themeManager) {
-      this.themeManager.updateAudioPlayerIconsForElement(playerElement);
-    }
-
     if (this.audioManager) {
       this.audioManager.registerAudioPlayer(audio, {
         title: trackTitle,

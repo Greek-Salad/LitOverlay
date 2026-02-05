@@ -56,7 +56,6 @@ class ThemeManager {
       this.updateIcons();
       this.updateColorPreviews();
       this.updatePresetButtons();
-      this.updateAudioPlayerIcons();
 
       this.saveState();
 
@@ -186,10 +185,6 @@ class ThemeManager {
       themeIconClass = this.currentPreset === "dark" ? "show-sun" : "show-moon";
     }
 
-    const menuIcon = document.getElementById("menu-icon");
-    if (menuIcon && menuIcon.tagName === "svg") {
-      menuIcon.style.stroke = isBgDark ? "#ffffff" : "#000000";
-    }
     this.updateThemeIconByClass(themeIconClass);
   }
 
@@ -199,26 +194,6 @@ class ThemeManager {
 
     themeIconSvg.classList.remove("show-sun", "show-moon");
     themeIconSvg.classList.add(themeIconClass);
-  }
-
-  updateAudioPlayerIcons() {
-    const isBgDark = Utils.isDarkColor(this.customColors.bg);
-    const iconColor = isBgDark ? "#ffffff" : "#333333";
-
-    document.querySelectorAll(".custom-audio-player svg").forEach((svg) => {
-      svg.style.fill = iconColor;
-    });
-  }
-
-  updateAudioPlayerIconsForElement(playerElement) {
-    if (!playerElement) return;
-
-    const isBgDark = Utils.isDarkColor(this.customColors.bg);
-    const iconColor = isBgDark ? "#ffffff" : "#333333";
-
-    playerElement.querySelectorAll("svg").forEach((svg) => {
-      svg.style.fill = iconColor;
-    });
   }
 
   updateColorPreviews() {
