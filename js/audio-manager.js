@@ -489,7 +489,7 @@ class AudioManager {
         const rect = toggleBtn.getBoundingClientRect();
         const toolbar = document.querySelector(".toolbar");
 
-        if (toolbar) {
+        if (toolbar && window.innerWidth > 768) {
           if (getComputedStyle(toolbar).position === "static") {
             toolbar.style.position = "relative";
           }
