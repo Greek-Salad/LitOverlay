@@ -363,7 +363,30 @@
 
     <div id="overlay" class="overlay" aria-hidden="true"></div>
 
+    <div id="age-gate-modal" class="age-gate-modal" style="display: none;">
+        <div class="age-gate-content">
+            <h2>Предупреждение о возрасте</h2>
+            <p>
+                Этот сайт содержит контент, предназначенный исключительно для лиц, достигших 18 лет.
+                Входя на этот сайт, вы подтверждаете, что вам уже есть 18 лет и вы согласны с тем, что будете использовать этот сайт на свой страх и риск.
+                Владелец сайта не несёт ответственности за любой ущерб, который может возникнуть в результате использования этого сайта несовершеннолетними лицами.
+            </p>
+            <p>
+                Если вам ещё нет 18 лет, пожалуйста, покиньте этот сайт.
+            </p>
+            <div class="age-gate-buttons">
+                <button id="age-gate-accept" class="age-gate-btn accept-btn">
+                    Мне уже есть 18 лет
+                </button>
+                <button id="age-gate-decline" class="age-gate-btn decline-btn">
+                    Мне ещё нет 18 лет
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="./js/app.js"></script>
+
 </body>
 
 </html>

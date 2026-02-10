@@ -8,6 +8,8 @@ class AudioManager {
     this.currentTrack = null;
     this.isDropdownOpen = false;
     this.audioPlayers = new Map();
+    this.currentVolume = 0.7;
+    this.isMuted = false;
     this.init();
   }
 
@@ -153,6 +155,20 @@ class AudioManager {
     });
   }
 
+  applyVolumeToAudio(audioElement) {
+    if (audioElement) {
+      audioElement.volume = this.currentVolume;
+      audioElement.muted = this.isMuted;
+      if (this.audioVolumeSlider) {
+        this.audioVolumeSlider.style.width = `${this.currentVolume * 100}%`;
+      }
+      if (this.volumeIcon && this.mutedIcon) {
+        this.volumeIcon.style.display = this.isMuted ? "none" : "block";
+        this.mutedIcon.style.display = this.isMuted ? "block" : "none";
+      }
+    }
+  }
+
   registerAudioPlayer(audioElement, trackInfo) {
     const playerId = trackInfo.path || `audio-${Date.now()}`;
     this.audioPlayers.set(playerId, {
@@ -161,6 +177,7 @@ class AudioManager {
       id: playerId,
       isPlaying: false,
     });
+    this.applyVolumeToAudio(audioElement);
 
     if (!this.activeAudio || !audioElement.paused) {
       console.log(
@@ -359,6 +376,7 @@ class AudioManager {
     if (currentIndex !== -1 && currentIndex < playerIds.length - 1) {
       const nextPlayerId = playerIds[currentIndex + 1];
       this.setActivePlayer(nextPlayerId);
+      this.applyVolumeToAudio(this.activeAudio);
       this.playActiveAudio();
     }
   }
@@ -373,6 +391,7 @@ class AudioManager {
     if (currentIndex > 0) {
       const prevPlayerId = playerIds[currentIndex - 1];
       this.setActivePlayer(prevPlayerId);
+      this.applyVolumeToAudio(this.activeAudio);
       this.playActiveAudio();
     }
   }
@@ -391,13 +410,14 @@ class AudioManager {
 
     const rect = this.audioVolumeContainer.getBoundingClientRect();
     const percent = (event.clientX - rect.left) / rect.width;
-    const volume = Utils.clamp(percent, 0, 1);
+    this.currentVolume = Utils.clamp(percent, 0, 1);
 
-    this.activeAudio.volume = volume;
+    this.activeAudio.volume = this.currentVolume;
     this.activeAudio.muted = false;
+    this.isMuted = false;
 
     if (this.audioVolumeSlider) {
-      this.audioVolumeSlider.style.width = `${volume * 100}%`;
+      this.audioVolumeSlider.style.width = `${this.currentVolume * 100}%`;
     }
 
     if (this.volumeIcon && this.mutedIcon) {

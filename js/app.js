@@ -22,13 +22,16 @@ class ReadingApp {
     this.themeToggleHandler = null;
     this.hintInjector = null;
     this.audioManager = null;
+    this.initializationPromise = null;
   }
 
-  async init() {
-    if (this.isInitialized) return;
+  async startBackgroundInitialization() {
+    if (this.backgroundInitStarted) {
+      return this.backgroundInitPromise;
+    }
+    this.backgroundInitStarted = true;
 
-    console.log("🚀 Starting Reading App...");
-
+    console.log("🚀 Starting background initialization...");
     try {
       this.settingsManager = new SettingsManager();
       this.themeManager = new ThemeManager();
@@ -37,7 +40,7 @@ class ReadingApp {
       window.audioManager = this.audioManager;
 
       this.mediaInjector = new MediaInjector(
-        this.themeManager,
+        this.audioManager,
         this.audioManager,
       );
       await this.mediaInjector.init();
@@ -50,15 +53,73 @@ class ReadingApp {
       window.hintInjector = this.hintInjector;
 
       this.chapterLoader = new ChapterLoader();
+      this.searchManager = new SearchManager();
       await this.chapterLoader.init();
 
-      this.searchManager = new SearchManager();
+      console.log("✅ Background initialization complete.");
+      return true;
+    } catch (error) {
+      console.error("❌ Error during background initialization:", error);
+      this.initializationError = error;
+      return false;
+    }
+  }
+
+  async init() {
+    if (this.isInitialized) return;
+
+    console.log("🚀 Starting Reading App...");
+    this.initializationPromise = this.startBackgroundInitialization();
+
+    if (document.readyState !== "loading") {
+      this.showAgeGateModal();
+    } else {
+      document.addEventListener("DOMContentLoaded", () => {
+        this.showAgeGateModal();
+      });
+    }
+  }
+
+  showAgeGateModal() {
+    const modal = document.getElementById("age-gate-modal");
+    const acceptBtn = document.getElementById("age-gate-accept");
+    const declineBtn = document.getElementById("age-gate-decline");
+
+    if (!modal || !acceptBtn || !declineBtn) {
+      console.error("Age gate modal elements not found!");
+      this.continueInitialization();
+      return;
+    }
+
+    acceptBtn.onclick = () => {
+      modal.style.display = "none";
+      this.continueInitialization();
+    };
+
+    declineBtn.onclick = () => {
+      window.close();
+      setTimeout(() => {
+        alert("Пожалуйста, закройте эту вкладку вручную.");
+      }, 100);
+    };
+
+    modal.style.display = "flex";
+  }
+
+  async continueInitialization() {
+    if (this.isInitialized) return;
+
+    try {
+      const bgInitSuccessful = await this.initializationPromise;
+      if (!bgInitSuccessful) {
+        throw new Error("Background initialization failed.");
+      }
 
       this.setupUI();
       this.setupScrollProgressIndicator();
 
       this.isInitialized = true;
-      console.log("✅ Reading App fully initialized!");
+      console.log("✅ Reading App fully initialized after age gate!");
 
       this.hideLoadingOverlay();
       window.readingApp = this;
@@ -84,8 +145,17 @@ class ReadingApp {
           );
         }
       }
+
+      if (this.chapterLoader) {
+        await this.chapterLoader.goToChapter(
+          this.chapterLoader.getCurrentChapter(),
+        );
+      }
     } catch (error) {
-      console.error("❌ Failed to initialize app:", error);
+      console.error(
+        "❌ Failed to continue initialization after age gate:",
+        error,
+      );
       this.showErrorState(error);
       this.hideLoadingOverlay();
     }
@@ -98,6 +168,9 @@ class ReadingApp {
       "menu-toggle",
       "theme-toggle",
       "settings-toggle",
+      "age-gate-modal",
+      "age-gate-accept",
+      "age-gate-decline",
     ];
 
     const missingElements = requiredElements.filter(
@@ -105,9 +178,12 @@ class ReadingApp {
     );
 
     if (missingElements.length > 0) {
-      throw new Error(
-        `Missing required DOM elements: ${missingElements.join(", ")}`,
+      console.warn(
+        `Missing required DOM elements for age gate: ${missingElements.join(", ")}`,
       );
+      // throw new Error( // Не бросаем ошибку, если модальное окно не найдено, инициализация может идти дальше
+      //   `Missing required DOM elements: ${missingElements.join(", ")}`,
+      // );
     }
   }
 

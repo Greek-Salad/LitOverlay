@@ -1173,6 +1173,99 @@ u[data-hint]:hover {
   pointer-events: none;
 }
 
+.age-gate-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.age-gate-content {
+  background-color: var(
+    --bg-color,
+    white
+  );
+  color: var(--text-color, black);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  max-width: 50vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.age-gate-content h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.age-gate-content p {
+  margin: 0 0 1.5rem 0;
+  line-height: 1.5;
+  flex-grow: 1;
+}
+
+.age-gate-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  align-self: flex-end;
+}
+
+.age-gate-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    transform 0.1s;
+}
+
+.accept-btn {
+  background-color: #4caf50;
+  color: white;
+}
+
+.accept-btn:hover {
+  background-color: #45a049;
+  transform: translateY(-2px);
+}
+
+.accept-btn:active {
+  transform: translateY(0);
+}
+
+.decline-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+.decline-btn:hover {
+  background-color: #da190b;
+  transform: translateY(-2px);
+}
+
+.decline-btn:active {
+  transform: translateY(0);
+}
+
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;
@@ -1269,6 +1362,17 @@ u[data-hint]:hover {
 
   .audio-player-row {
     gap: 0.25rem;
+  }
+
+  .age-gate-content {
+    max-width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .age-gate-buttons {
+    flex-direction: column;
+    gap: 0.5rem;
   }
 }
 
