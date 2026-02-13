@@ -389,7 +389,7 @@ function setupIOSAudioHandling() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("📄 DOM loaded, starting app...");
+  console.log("📄 DOM loaded, starting app background init...");
 
   setupIOSAudioHandling();
 

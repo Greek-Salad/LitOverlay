@@ -452,14 +452,7 @@ class ChapterLoader {
     }
 
     if (breadcrumb) {
-      const chapterTitle =
-        this.chapterTitles[this.currentChapter] ||
-        `Глава ${this.currentChapter}`;
-      const shortTitle =
-        chapterTitle.length > 30
-          ? chapterTitle.substring(0, 27) + "..."
-          : chapterTitle;
-      breadcrumb.textContent = shortTitle;
+      breadcrumb.textContent = `Глава ${this.currentChapter}`;
     }
 
     this.refreshActiveChapterInNav();

@@ -13,10 +13,18 @@ class ThemeManager {
     this.currentPreset = "light";
     this.customColors = { ...THEME_PRESETS.light };
     this.isApplying = false;
+    this.metaThemeColor = null;
     this.init();
   }
 
   init() {
+    this.metaThemeColor = document.getElementById("theme-color-meta");
+    if (!this.metaThemeColor) {
+      this.metaThemeColor = document.createElement("meta");
+      this.metaThemeColor.name = "theme-color";
+      this.metaThemeColor.id = "theme-color-meta";
+      document.head.appendChild(this.metaThemeColor);
+    }
     this.loadSavedState();
     this.applyTheme();
     this.setupEventListeners();
@@ -56,6 +64,7 @@ class ThemeManager {
       this.updateIcons();
       this.updateColorPreviews();
       this.updatePresetButtons();
+      this.updateMetaThemeColor();
 
       this.saveState();
 
@@ -67,6 +76,23 @@ class ThemeManager {
       console.error("Error applying theme:", error);
     } finally {
       this.isApplying = false;
+    }
+  }
+
+  updateMetaThemeColor() {
+    if (!this.metaThemeColor) {
+      console.warn("Cannot update theme-color meta tag: element not found.");
+      return;
+    }
+
+    const bgColor = this.customColors.bg;
+    // Альтернатива: const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--sidebar-bg').trim();
+
+    if (bgColor && /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(bgColor)) {
+      this.metaThemeColor.setAttribute("content", bgColor);
+      console.log(`📱 Updated theme-color meta tag to: ${bgColor}`);
+    } else {
+      console.warn(`Invalid theme-color value: ${bgColor}`);
     }
   }
 
