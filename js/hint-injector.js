@@ -7,11 +7,21 @@ class HintInjector {
     this.hints = [];
     this.configPath = "./config/hint-rules.json";
     this.activeTooltips = new Set();
+    this.initialized = false;
+    this.initPromise = null;
   }
 
   async init() {
-    await this.loadHints();
-    console.log(`✅ HintInjector initialized with ${this.hints.length} hints`);
+    if (this.initPromise) return this.initPromise;
+
+    this.initPromise = this.loadHints().then(() => {
+      this.initialized = true;
+      console.log(
+        `✅ HintInjector initialized with ${this.hints.length} hints`,
+      );
+    });
+
+    return this.initPromise;
   }
 
   async loadHints() {
@@ -26,7 +36,20 @@ class HintInjector {
     }
   }
 
+  async ensureHintsLoaded() {
+    if (!this.initialized) {
+      await this.init();
+    }
+    return this.hints;
+  }
+
   async injectHints(html, chapterNumber) {
+    if (this.hints.length === 0) {
+      console.log("⚠️ Hints not loaded yet, loading now...");
+      await this.loadHints();
+    }
+    await this.ensureHintsLoaded();
+
     console.log(
       `🎯 injectHints called for chapter ${chapterNumber}, found ${this.hints.length} total hints`,
     );
@@ -34,6 +57,7 @@ class HintInjector {
     const chapterHints = this.hints.filter(
       (hint) => hint.chapter === chapterNumber,
     );
+
     console.log(
       `📋 Found ${chapterHints.length} hints for chapter ${chapterNumber}:`,
       chapterHints,
@@ -48,7 +72,7 @@ class HintInjector {
 
     for (const hintRule of chapterHints) {
       console.log(`🔧 Applying hint:`, hintRule);
-      await this.applyHint(doc, hintRule);
+      this.applyHint(doc, hintRule);
     }
 
     const result = doc.body.innerHTML;
@@ -127,7 +151,9 @@ class HintInjector {
 
     window.removeEventListener("scroll", this.boundHandleScroll);
     this.boundHandleScroll = this.handleScroll.bind(this);
-    window.addEventListener("scroll", this.boundHandleScroll, { passive: true });
+    window.addEventListener("scroll", this.boundHandleScroll, {
+      passive: true,
+    });
   }
 
   clearAllTooltips() {
@@ -173,8 +199,11 @@ class HintInjector {
 
     const u = event.currentTarget;
 
-    const existingTooltip = u.querySelector(".dynamic-hint-tooltip") ||
-      document.querySelector(".dynamic-hint-tooltip[data-for='" + u.dataset.hintId + "']");
+    const existingTooltip =
+      u.querySelector(".dynamic-hint-tooltip") ||
+      document.querySelector(
+        ".dynamic-hint-tooltip[data-for='" + u.dataset.hintId + "']",
+      );
 
     if (existingTooltip) {
       if (existingTooltip.parentNode) {
@@ -232,7 +261,8 @@ class HintInjector {
     tooltipEl.className = "dynamic-hint-tooltip";
     tooltipEl.textContent = hint;
 
-    const hintId = "hint-" + Date.now() + "-" + Math.random().toString(36).substr(2, 9);
+    const hintId =
+      "hint-" + Date.now() + "-" + Math.random().toString(36).substr(2, 9);
     tooltipEl.dataset.hintId = hintId;
     u.dataset.hintId = hintId;
 
@@ -251,7 +281,8 @@ class HintInjector {
       fontFamily: getComputedStyle(u).fontFamily,
       fontWeight: getComputedStyle(u).fontWeight,
       boxShadow: getComputedStyle(u).getPropertyValue("--shadow"),
-      border: "1px solid " + getComputedStyle(u).getPropertyValue("--border-color"),
+      border:
+        "1px solid " + getComputedStyle(u).getPropertyValue("--border-color"),
       maxWidth: maxWidth + "px",
       whiteSpace: isSingleLine ? "nowrap" : "normal",
       wordWrap: isSingleLine ? "normal" : "break-word",
@@ -294,21 +325,22 @@ class HintInjector {
     const repositionTooltip = () => {
       const newRect = u.getBoundingClientRect();
       tooltipEl.style.top = newRect.top + window.scrollY - 10 + "px";
-      
-      const newTargetCenterX = newRect.left + newRect.width / 2 + window.scrollX;
+
+      const newTargetCenterX =
+        newRect.left + newRect.width / 2 + window.scrollX;
       let newFinalLeft = newTargetCenterX - tooltipWidth / 2;
-      
+
       if (newFinalLeft < 10) {
         newFinalLeft = 10;
       } else if (newFinalLeft + tooltipWidth > window.innerWidth - 10) {
         newFinalLeft = window.innerWidth - 10 - tooltipWidth;
       }
-      
+
       tooltipEl.style.left = newFinalLeft + "px";
     };
 
     window.addEventListener("resize", repositionTooltip);
-    
+
     const cleanup = () => {
       window.removeEventListener("resize", repositionTooltip);
       this.activeTooltips.delete(tooltipEl);
@@ -320,7 +352,7 @@ class HintInjector {
   cleanup() {
     this.clearAllTooltips();
     window.removeEventListener("scroll", this.boundHandleScroll);
-    
+
     document.querySelectorAll("u[data-hint]").forEach((u) => {
       u.removeEventListener("mouseenter", this.boundHandleHintMouseEnter);
       u.removeEventListener("touchstart", this.boundHandleTouchStart);

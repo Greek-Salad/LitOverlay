@@ -115,6 +115,10 @@ class ReadingApp {
         throw new Error("Background initialization failed.");
       }
 
+      if (this.hintInjector && !this.hintInjector.initialized) {
+        await this.hintInjector.init();
+      }
+
       this.setupUI();
       this.setupScrollProgressIndicator();
 

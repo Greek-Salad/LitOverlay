@@ -335,6 +335,12 @@ class ChapterLoader {
       );
       this.updateNavigationUI();
       window.scrollTo({ top: 0, behavior: "smooth" });
+
+      if (window.hintInjector) {
+        setTimeout(() => {
+          window.hintInjector.setupHintTooltips();
+        }, 50);
+      }
       return;
     }
 
@@ -391,9 +397,13 @@ class ChapterLoader {
         }
 
         this.refreshActiveChapterInNav();
-        if (window.hintInjector) {
-          window.hintInjector.setupHintTooltips();
-        }
+
+        setTimeout(() => {
+          if (window.hintInjector) {
+            console.log("🔧 Setting up hint tooltips after DOM ready");
+            window.hintInjector.setupHintTooltips();
+          }
+        }, 50);
       }
     } catch (error) {
       console.error("Error loading chapter:", error);
