@@ -419,7 +419,12 @@ class LitOverlayReaderApp extends HTMLElement {
     if (this.chapterResolveStarted) return;
     this.chapterResolveStarted = true;
     try {
-      await this.resolver.resolve();
+      await this.resolver.resolve({
+        onBatch: () => {
+          this.renderChapterList();
+          this.updateNavigation();
+        }
+      });
       this.renderChapterList();
       this.updateNavigation();
       await this.loadTitlesInBackground();

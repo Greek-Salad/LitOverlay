@@ -147,6 +147,16 @@ const afterResume = await evaluate(`(() => {
 assert.equal(afterResume.currentChapter, 15, `Expected resume to open saved chapter: ${JSON.stringify(afterResume)}`);
 assert.equal(afterResume.progressChapter, 15, `Expected progress to stay on resumed chapter: ${JSON.stringify(afterResume)}`);
 assert.equal(afterResume.preservedSetting, "keep", `Expected unknown readerSettings field to survive untouched: ${JSON.stringify(afterResume)}`);
+const sidebarStart = Date.now();
+await evaluate("document.querySelector('[data-menu-toggle]').click()");
+await waitFor("document.querySelectorAll('.chapter-item').length >= 34", 2500);
+const resumeSidebar = await evaluate(`({
+  elapsedMs: ${Date.now()} - ${sidebarStart},
+  chapters: document.querySelectorAll('.chapter-item').length,
+  activeChapter: document.querySelector('.chapter-item.active')?.dataset.chapter || ''
+})`);
+assert.ok(resumeSidebar.chapters >= 34, `Expected resumed reader sidebar to resolve full TOC quickly: ${JSON.stringify(resumeSidebar)}`);
+assert.equal(resumeSidebar.activeChapter, "15", `Expected resumed chapter to stay active in full TOC: ${JSON.stringify(resumeSidebar)}`);
 
 await send("Page.navigate", { url: `${baseUrl}/book.html?id=mondschein&__storageTest=legacy` });
 await waitFor("document.readyState === 'complete'");
@@ -177,4 +187,4 @@ assert.equal(defaultLast.hasResume, false, `Expected no resume prompt for defaul
 
 socket.close();
 
-console.log("Browser storage migration passed.", { beforeResume, afterResume, legacyLast, defaultLast });
+console.log("Browser storage migration passed.", { beforeResume, afterResume, resumeSidebar, legacyLast, defaultLast });

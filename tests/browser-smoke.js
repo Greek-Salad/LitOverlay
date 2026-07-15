@@ -97,7 +97,7 @@ const ageGateValue = await evaluate(`(() => {
 })()`);
 await evaluate("document.querySelector('[data-confirm]')?.click()");
 await waitFor("document.querySelector('[data-chapter-content] h2')?.textContent.includes('Глава 15')");
-await waitFor("Boolean(document.querySelector('img[src*=\"comments15.png\"]'))");
+await waitFor("Boolean(document.querySelector('img[src*=\"ch15comments.png\"]'))");
 await waitFor("![...document.querySelectorAll('[data-chapter-content] p')].some((node) => node.textContent.includes('получили, гады'))");
 await waitFor("document.querySelectorAll('.chapter-item').length >= 34", 12000);
 await waitFor("document.querySelector('[data-next] span')?.textContent.includes('Сервер лежит')", 15000);
@@ -106,8 +106,8 @@ const value = await evaluate(`({
     title: document.querySelector('[data-chapter-content] h2')?.textContent || '',
     chapters: document.querySelectorAll('.chapter-item').length,
     audioLaunchers: document.querySelectorAll('.audio-launcher').length,
-    commentsImage: Boolean(document.querySelector('img[src*="comments15.png"]')),
-    commentsImageAlt: document.querySelector('img[src*="comments15.png"]')?.alt || '',
+    commentsImage: Boolean(document.querySelector('img[src*="ch15comments.png"]')),
+    commentsImageAlt: document.querySelector('img[src*="ch15comments.png"]')?.alt || '',
     commentsParagraphPresent: [...document.querySelectorAll('[data-chapter-content] p')].some((node) => node.textContent.includes('получили, гады')),
     warningsVisible: !document.querySelector('[data-warnings]')?.hidden,
     footerWidth: Math.round(document.querySelector('.chapter-navigation')?.getBoundingClientRect().width || 0),

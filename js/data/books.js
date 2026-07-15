@@ -55,15 +55,28 @@ export class ChapterResolver {
     this.resolvedAll = false;
   }
 
-  async resolve() {
+  async resolve(options = {}) {
     const max = this.getMaxChapterNumber();
     const numbers = [0];
     for (let number = 1; number <= max; number += 1) numbers.push(number);
-    for (const number of numbers) {
+    const warmup = [0, 1].filter((number) => number <= max || number === 0);
+    for (const number of warmup) {
       await this.resolveNumber(number);
     }
+    options.onBatch?.(this.chapters);
+    const rest = numbers.filter((number) => !warmup.includes(number));
+    await this.resolveInBatches(rest, options);
     this.resolvedAll = true;
     return this.chapters;
+  }
+
+  async resolveInBatches(numbers, options = {}) {
+    const batchSize = Math.max(1, Number.parseInt(options.batchSize ?? 8, 10) || 8);
+    for (let index = 0; index < numbers.length; index += batchSize) {
+      const batch = numbers.slice(index, index + batchSize);
+      await Promise.all(batch.map((number) => this.resolveNumber(number)));
+      options.onBatch?.(this.chapters);
+    }
   }
 
   getMaxChapterNumber() {
