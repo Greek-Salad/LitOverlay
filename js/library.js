@@ -1,429 +1,266 @@
-// js/library.js
-import ThemeManager from "./theme-manager.js";
-import Utils from "./utils.js";
+import { icon } from "./core/icons.js";
+import { ThemeController } from "./core/theme.js";
 import {
-  AGE_GATE_CONFIRMED_KEY,
-  AGE_GATE_CONFIRMED_TIMESTAMP,
-  AGE_GATE_SESSION_DURATION,
-} from "./constants.js";
+  clearBookProgress,
+  hasMeaningfulProgress,
+  loadAgeGate,
+  loadLibraryPrefs,
+  loadReadState,
+  loadReadingProgress,
+  saveLibraryPrefs
+} from "./core/storage.js";
+import { bookUrl, copyText, escapeHtml, formatDate, formatTimeAgo } from "./core/utils.js";
+import { loadLibraryBooks, needsAgeGate } from "./data/books.js";
+import { showAgeGateModal, toast } from "./ui/modals.js";
 
-class LibraryApp {
+class LitOverlayLibraryApp extends HTMLElement {
   constructor() {
-    this.themeManager = null;
+    super();
+    this.theme = new ThemeController();
     this.books = [];
-    this.booksGrid = document.getElementById("books-grid");
-    this.loadingOverlay = document.getElementById("loading-overlay");
-    this.ageGateModal = null;
-    this.ageConfirmed = false;
+    this.query = "";
+    this.view = loadLibraryPrefs().view;
+    this.ageGate = loadAgeGate().value;
   }
 
-  async init() {
-    console.log("📚 Initializing Library...");
-
-    this.themeManager = new ThemeManager();
-
-    this.checkAgeConfirmation();
-
-    try {
-      await this.scanBooks();
-      this.render();
-
-      if (!this.ageConfirmed) {
-        this.createAgeGateModal();
-      }
-    } catch (error) {
-      console.error("Failed to load library:", error);
-      this.showError();
-    } finally {
-      this.hideLoadingOverlay();
-    }
+  connectedCallback() {
+    this.renderShell();
+    this.theme.init();
+    this.bindShell();
+    this.load();
   }
 
-  checkAgeConfirmation() {
-    const confirmed = Utils.loadFromStorage(AGE_GATE_CONFIRMED_KEY, false);
-    const timestamp = Utils.loadFromStorage(AGE_GATE_CONFIRMED_TIMESTAMP, 0);
-    const now = Date.now();
-
-    if (confirmed && now - timestamp < AGE_GATE_SESSION_DURATION) {
-      this.ageConfirmed = true;
-      console.log("✅ Age confirmed in this session");
-    } else if (confirmed) {
-      Utils.saveToStorage(AGE_GATE_CONFIRMED_KEY, false);
-      Utils.saveToStorage(AGE_GATE_CONFIRMED_TIMESTAMP, 0);
-      this.ageConfirmed = false;
-      console.log("🔄 Age confirmation expired, need to confirm again");
-    } else {
-      this.ageConfirmed = false;
-    }
-  }
-
-  createAgeGateModal(message = null) {
-    const hasAdultContent = this.books.some((book) => book.ageRating >= 18);
-
-    if (!hasAdultContent && !message) {
-      console.log("ℹ️ No adult content found, skipping age gate");
-      this.ageConfirmed = true;
-      Utils.saveToStorage(AGE_GATE_CONFIRMED_KEY, true);
-      Utils.saveToStorage(AGE_GATE_CONFIRMED_TIMESTAMP, Date.now());
-      return;
-    }
-
-    if (document.getElementById("age-gate-modal")) {
-      return;
-    }
-
-    const modalMessage =
-      message ||
-      "Этот сайт содержит контент, предназначенный исключительно для лиц, достигших 18 лет.\n" +
-        "Входя на этот сайт, вы подтверждаете, что вам уже есть 18 лет и вы согласны с тем, что будете\n" +
-        "использовать этот сайт на свой страх и риск.\n" +
-        "Владелец сайта не несёт ответственности за любой ущерб, который может возникнуть в результате\n" +
-        "использования этого сайта несовершеннолетними лицами.";
-
-    const modal = document.createElement("div");
-    modal.id = "age-gate-modal";
-    modal.className = "age-gate-modal";
-    modal.innerHTML = `
-      <div class="age-gate-content">
-        <h2>${message ? "Требуется подтверждение" : "Предупреждение о возрасте"}</h2>
-        <p>${modalMessage.replace(/\n/g, "<br>")}</p>
-        ${!message ? "<p>Если вам ещё нет 18 лет, пожалуйста, покиньте этот сайт.</p>" : ""}
-        <div class="age-gate-buttons">
-          <button id="age-gate-accept" class="age-gate-btn accept-btn">
-            Мне уже есть 18 лет
-          </button>
-          <button id="age-gate-decline" class="age-gate-btn decline-btn">
-            ${message ? "Закрыть" : "Мне ещё нет 18 лет"}
-          </button>
-        </div>
+  renderShell() {
+    this.innerHTML = `
+      <div class="loading-overlay" data-loading>
+        <div class="spinner"></div>
+        <p>Загрузка библиотеки...</p>
       </div>
+      <main class="library-main">
+        <header class="library-header">
+          <h1>Произведения Греческого Салата</h1>
+          <div class="library-actions theme-switcher">
+            <button class="icon-btn" type="button" data-theme-toggle aria-label="Переключить тему" title="Переключить тему">${icon("theme", 24)}</button>
+          </div>
+        </header>
+        <section class="library-controls" aria-label="Управление библиотекой">
+          <label class="search-shell">
+            ${icon("search", 18)}
+            <span class="visually-hidden">Поиск по названию и тегам</span>
+            <input type="text" data-library-search placeholder="Поиск..." autocomplete="off">
+            <button class="search-clear-btn" type="button" data-library-search-clear aria-label="Очистить поиск" title="Очистить поиск" hidden>${icon("close", 16)}</button>
+          </label>
+          <div class="segmented" role="group" aria-label="Режим отображения">
+            <button class="icon-btn" type="button" data-view="list" aria-label="Список" title="Список">${icon("list-view", 18)}</button>
+            <button class="icon-btn" type="button" data-view="grid" aria-label="Плитка" title="Плитка">${icon("grid-view", 18)}</button>
+          </div>
+        </section>
+        <section class="continue-section" data-continue hidden></section>
+        <section class="books-grid" data-books></section>
+      </main>
     `;
-
-    document.body.appendChild(modal);
-    this.ageGateModal = modal;
-
-    let overlay = document.getElementById("overlay");
-    if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.id = "overlay";
-      overlay.className = "overlay visible";
-      document.body.appendChild(overlay);
-    } else {
-      overlay.classList.add("visible");
-    }
-
-    const acceptBtn = document.getElementById("age-gate-accept");
-    const declineBtn = document.getElementById("age-gate-decline");
-
-    acceptBtn.addEventListener("click", () => {
-      this.ageConfirmed = true;
-      Utils.saveToStorage(AGE_GATE_CONFIRMED_KEY, true);
-      Utils.saveToStorage(AGE_GATE_CONFIRMED_TIMESTAMP, Date.now());
-
-      modal.remove();
-
-      const overlay = document.getElementById("overlay");
-      if (overlay) {
-        overlay.classList.remove("visible");
-      }
-
-      this.render();
-    });
-
-    declineBtn.addEventListener("click", () => {
-      modal.remove();
-
-      const overlay = document.getElementById("overlay");
-      if (overlay) {
-        overlay.classList.remove("visible");
-      }
-
-      if (!message) {
-        this.render();
-      }
-    });
   }
 
-  async scanBooks() {
-    console.log("🔍 Starting scanBooks...");
-
-    try {
-      const indexResponse = await fetch("./books/index.json");
-      if (!indexResponse.ok) {
-        throw new Error("Failed to load books index");
-      }
-
-      const indexData = await indexResponse.json();
-      const candidateBooks = indexData.books || [];
-
-      console.log(`📋 Found book list from index:`, candidateBooks);
-
-      const books = [];
-
-      for (const bookId of candidateBooks) {
-        try {
-          const infoPath = `./books/${bookId}/info.json`;
-          console.log(`🔍 Checking: ${infoPath}`);
-
-          const response = await fetch(infoPath);
-
-          if (response.ok) {
-            const info = await response.json();
-            console.log(`✅ Found book: ${info.title} (id: ${bookId})`);
-
-            let hasPreface = false;
-            try {
-              const prefaceResponse = await fetch(
-                `./books/${bookId}/chapters/00.html`,
-                {
-                  method: "HEAD",
-                },
-              );
-              hasPreface = prefaceResponse.ok;
-            } catch {
-              hasPreface = false;
-            }
-
-            books.push({
-              id: bookId,
-              ...info,
-              coverUrl: `./books/${bookId}/${info.cover || ""}`,
-              ageRating: info.ageRating || 0,
-              tags: info.tags || [],
-              hasPreface: hasPreface,
-              writtenDate: info.writtenDate || null,
-              finished: info.finished || false,
-            });
-          }
-        } catch (error) {
-          console.warn(`⚠️ Error loading book ${bookId}:`, error);
-        }
-      }
-
-      this.books = books;
-      console.log(
-        "📚 Final books list:",
-        this.books.map((b) => ({
-          id: b.id,
-          title: b.title,
-          ageRating: b.ageRating,
-          hasPreface: b.hasPreface,
-          writtenDate: b.writtenDate,
-          finished: b.finished,
-        })),
-      );
-    } catch (error) {
-      console.error("❌ Failed to load books index:", error);
-      this.books = [];
-    }
-  }
-
-  render() {
-    console.log("📋 Rendering library, books:", this.books);
-
-    if (!this.booksGrid) {
-      console.error("❌ booksGrid element not found!");
-      return;
-    }
-
-    if (this.books.length === 0) {
-      this.booksGrid.innerHTML =
-        '<div class="no-books">📚 В библиотеке пока нет книг</div>';
-      return;
-    }
-
-    let html = "";
-    this.books.forEach((book) => {
-      console.log("📚 Processing book:", book);
-      html += this.createBookCard(book);
+  bindShell() {
+    this.querySelector("[data-theme-toggle]").addEventListener("click", () => this.theme.toggle());
+    const searchInput = this.querySelector("[data-library-search]");
+    const clearSearch = this.querySelector("[data-library-search-clear]");
+    searchInput.addEventListener("input", (event) => {
+      this.query = event.target.value.trim().toLowerCase();
+      clearSearch.hidden = !event.target.value;
+      this.renderBooks();
     });
-
-    this.booksGrid.innerHTML = html;
-
-    const cards = this.booksGrid.querySelectorAll(".book-card");
-    console.log(`🔍 Found ${cards.length} cards in DOM`);
-
-    cards.forEach((card) => {
-      const clickableElements = card.querySelectorAll(
-        ".book-cover-wrapper, .book-title",
-      );
-
-      clickableElements.forEach((element) => {
-        element.addEventListener(
-          "click",
-          function (event) {
-            event.stopPropagation();
-
-            const bookCard = element.closest(".book-card");
-            const bookId = bookCard.dataset.bookId;
-            const hasPreface = bookCard.dataset.hasPreface === "true";
-            const ageRating = parseInt(bookCard.dataset.ageRating) || 0;
-
-            console.log(
-              "🔍 CLICK DETECTED! bookId:",
-              bookId,
-              "ageRating:",
-              ageRating,
-            );
-
-            if (!bookId) {
-              console.error("❌ No bookId found!");
-              return;
-            }
-
-            if (ageRating >= 18 && !this.ageConfirmed) {
-              const title =
-                bookCard.querySelector(".book-title")?.textContent ||
-                "этой книге";
-              const message = `Для доступа к книге "${title}" необходимо подтвердить, что вам есть 18 лет.`;
-              this.createAgeGateModal(message);
-              return;
-            }
-
-            const url = `./book?id=${encodeURIComponent(bookId)}`;
-            console.log("🔗 Redirecting to:", url);
-
-            window.location.href = url;
-          }.bind(this),
-        );
+    clearSearch.addEventListener("click", () => {
+      searchInput.value = "";
+      this.query = "";
+      clearSearch.hidden = true;
+      this.renderBooks();
+      searchInput.focus();
+    });
+    this.querySelectorAll("[data-view]").forEach((button) => {
+      button.addEventListener("click", () => {
+        this.view = button.dataset.view;
+        saveLibraryPrefs({ view: this.view });
+        this.renderBooks();
       });
     });
   }
 
-  getTagIcon() {
-    return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M20.59 13.41L13.42 20.58C13.2343 20.766 13.0137 20.9135 12.7709 21.0141C12.5281 21.1148 12.2678 21.1666 12.005 21.1666C11.7422 21.1666 11.4819 21.1148 11.2391 21.0141C10.9963 20.9135 10.7757 20.766 10.59 20.58L3 13V3H13L20.59 10.59C20.9625 10.9647 21.1716 11.4716 21.1716 12C21.1716 12.5284 20.9625 13.0353 20.59 13.41V13.41Z" 
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        <path d="M8 8H8.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-    </svg>`;
-  }
-
-  formatDate(dateString) {
-    if (!dateString) return null;
-
+  async load() {
     try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return dateString;
-
-      const day = date.getDate().toString().padStart(2, "0");
-      const month = (date.getMonth() + 1).toString().padStart(2, "0");
-      const year = date.getFullYear();
-
-      return `${day}.${month}.${year}`;
-    } catch {
-      return dateString;
+      const data = await loadLibraryBooks();
+      this.books = data.books;
+      this.querySelector("[data-loading]").remove();
+      this.renderContinue();
+      this.renderBooks();
+      if (this.books.some(needsAgeGate) && !this.ageGate.confirmed) {
+        const confirmed = await showAgeGateModal({ immediate: true });
+        this.ageGate = loadAgeGate().value;
+        if (!confirmed) this.ageGate.confirmed = false;
+        this.renderBooks();
+      }
+    } catch (error) {
+      this.querySelector("[data-loading]")?.remove();
+      this.querySelector("[data-books]").innerHTML = `<div class="error-state">Не удалось загрузить библиотеку: ${escapeHtml(error.message)}</div>`;
     }
   }
 
-  getStatusHtml(book) {
-    if (book.finished) {
-      return '<span class="book-status status-finished" title="Произведение завершено">✅ Завершено</span>';
-    } else {
-      return '<span class="book-status status-progress" title="Произведение в процессе написания">🔄 В процессе</span>';
+  renderContinue() {
+    const section = this.querySelector("[data-continue]");
+    const progress = loadReadingProgress().value;
+    const readState = loadReadState();
+    const items = Object.entries(progress)
+      .filter(([, entry]) => hasMeaningfulProgress(entry))
+      .map(([bookId, entry]) => {
+        const book = this.books.find((item) => item.id === bookId || item.folderId === bookId);
+        return { bookId, book, entry, completed: Boolean(readState.completed[bookId]) };
+      })
+      .filter((item) => item.book);
+    if (!items.length) {
+      section.hidden = true;
+      section.innerHTML = "";
+      return;
     }
+    section.hidden = false;
+    section.innerHTML = `
+      <h2 class="section-title">Продолжить чтение</h2>
+      <div class="continue-list">
+        ${items.map((item) => this.renderContinueItem(item)).join("")}
+      </div>
+    `;
+    section.querySelectorAll("[data-clear-progress]").forEach((button) => {
+      button.addEventListener("click", () => {
+        this.showClearProgressConfirm(button);
+      });
+    });
   }
 
-  createBookCard(book) {
-    console.log("📚 Creating card for:", book.id, book.title);
+  showClearProgressConfirm(button) {
+    const actions = button.closest(".continue-actions");
+    if (!actions) return;
+    actions.querySelector(".inline-confirm")?.remove();
+    const confirm = document.createElement("div");
+    confirm.className = "inline-confirm";
+    confirm.innerHTML = `
+      <span>Удалить прогресс?</span>
+      <button class="text-btn danger compact" type="button" data-confirm-clear>Удалить</button>
+      <button class="text-btn compact" type="button" data-cancel-clear>Отмена</button>
+    `;
+    button.after(confirm);
+    confirm.querySelector("[data-confirm-clear]").addEventListener("click", () => {
+      clearBookProgress(button.dataset.clearProgress);
+      this.renderContinue();
+    });
+    confirm.querySelector("[data-cancel-clear]").addEventListener("click", () => confirm.remove());
+    confirm.querySelector("[data-confirm-clear]").focus();
+  }
 
-    const coverHtml = book.cover
-      ? `<img src="${book.coverUrl}" alt="${book.title}" class="book-cover" 
-              onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22200%22%20height%3D%22300%22%20viewBox%3D%220%200%20200%20300%22%3E%3Crect%20width%3D%22200%22%20height%3D%22300%22%20fill%3D%22%23cccccc%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20font-size%3D%2224%22%20fill%3D%22%23666666%22%3E${book.title.charAt(0)}%3C%2Ftext%3E%3C%2Fsvg%3E';">`
-      : `<div class="book-cover-placeholder">${book.title.charAt(0)}</div>`;
-
-    const ageBadgeClass =
-      book.ageRating >= 18
-        ? "age-18"
-        : book.ageRating > 0
-          ? `age-${book.ageRating}`
-          : "";
-
-    const ageBadge =
-      book.ageRating > 0
-        ? `<span class="age-badge ${ageBadgeClass}">${book.ageRating}+</span>`
-        : "";
-
-    const isBlocked = book.ageRating >= 18 && !this.ageConfirmed;
-    const cardClass = isBlocked ? "book-card blocked" : "book-card";
-
-    const tagsHtml =
-      book.tags && book.tags.length > 0
-        ? `<div class="book-tags">${book.tags
-            .map(
-              (tag) =>
-                `<span class="book-tag">${this.getTagIcon()} ${Utils.escapeHtml(tag)}</span>`,
-            )
-            .join("")}</div>`
-        : "";
-
-    const formattedDate = this.formatDate(book.writtenDate);
-    const dateHtml = formattedDate
-      ? `<span class="book-date" title="Дата написания">📅 ${formattedDate}</span>`
-      : "";
-
-    const statusHtml = this.getStatusHtml(book);
-    const blockOverlay = isBlocked
-      ? '<div class="book-blocked-overlay"><span>🔞 18+</span></div>'
-      : "";
-
+  renderContinueItem({ bookId, book, entry, completed }) {
+    const start = book.hasPreface ? 0 : 1;
+    const title = escapeHtml(book.title || bookId);
+    const percent = Math.round(entry.scrollPercent || 0);
     return `
-        <div class="${cardClass}" data-book-id="${book.id}" data-age-rating="${book.ageRating || 0}" data-has-preface="${book.hasPreface || false}">
-            <div class="book-cover-wrapper">
-                ${coverHtml}
-            </div>
-            <div class="book-info">
-                ${ageBadge}
-                <h2 class="book-title">${Utils.escapeHtml(book.title)}</h2>
-                <p class="book-author">${Utils.escapeHtml(book.author || "Автор неизвестен")}</p>
-                <p class="book-description">${Utils.escapeHtml(book.description || "")}</p>
-                
-                ${tagsHtml}
-                
-                <div class="book-meta">
-                    ${statusHtml}
-                    ${dateHtml}
-                    <span>📖 ${book.totalChapters || "?"} ${this.pluralizeChapters(book.totalChapters)}</span>
-                    ${book.hasMedia ? "<span>🎵 аудио</span>" : ""}
-                    ${book.hasHints ? "<span>💡 подсказки</span>" : ""}
-                </div>
-                ${blockOverlay}
-            </div>
+      <article class="continue-item">
+        <div>
+          <p class="continue-title">${title}${completed ? " · прочитано" : ""}</p>
+          <div class="continue-meta">
+            <span>Глава ${entry.chapter}</span>
+            <span>${percent}%</span>
+            <span>${formatTimeAgo(entry.timestamp)}</span>
+          </div>
         </div>
+        <div class="continue-actions">
+          <a class="text-btn primary" href="${bookUrl(bookId, entry.chapter, { scrollPercent: percent })}">Продолжить</a>
+          <a class="text-btn" href="${bookUrl(bookId, start, { start: true })}">Сначала</a>
+          <button class="icon-btn" type="button" data-clear-progress="${bookId}" aria-label="Удалить прогресс" title="Удалить прогресс">${icon("trash", 18)}</button>
+        </div>
+      </article>
     `;
   }
 
-  pluralizeChapters(count) {
-    count = parseInt(count) || 0;
-
-    if (count % 10 === 1 && count % 100 !== 11) {
-      return "глава";
-    } else if (
-      [2, 3, 4].includes(count % 10) &&
-      ![12, 13, 14].includes(count % 100)
-    ) {
-      return "главы";
-    } else {
-      return "глав";
+  renderBooks() {
+    const grid = this.querySelector("[data-books]");
+    grid.classList.toggle("grid-view", this.view === "grid");
+    this.querySelectorAll("[data-view]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.view === this.view));
+    });
+    const books = this.books.filter((book) => this.matches(book));
+    if (!books.length) {
+      grid.innerHTML = `<div class="empty-state">Ничего не найдено.</div>`;
+      return;
     }
+    grid.innerHTML = books.map((book) => this.renderBook(book)).join("");
+    grid.querySelectorAll("[data-copy-link]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const href = new URL(bookUrl(button.dataset.copyLink), window.location.href).href;
+        await copyText(href);
+        toast("Ссылка скопирована");
+      });
+    });
+    grid.querySelectorAll("[data-blocked-link]").forEach((link) => {
+      link.addEventListener("click", async (event) => {
+        event.preventDefault();
+        const book = this.books.find((item) => item.id === link.dataset.blockedLink);
+        const confirmed = await showAgeGateModal({ bookTitle: book?.title ?? "" });
+        this.ageGate = loadAgeGate().value;
+        if (confirmed) this.renderBooks();
+      });
+    });
   }
 
-  showError() {
-    if (this.booksGrid) {
-      this.booksGrid.innerHTML =
-        '<div class="error">❌ Ошибка загрузки библиотеки</div>';
-    }
+  matches(book) {
+    if (!this.query) return true;
+    const haystack = [book.title, book.author, ...(book.tags ?? [])].join(" ").toLowerCase();
+    return haystack.includes(this.query);
   }
 
-  hideLoadingOverlay() {
-    if (this.loadingOverlay) {
-      this.loadingOverlay.style.opacity = "0";
-      this.loadingOverlay.style.visibility = "hidden";
-      setTimeout(() => this.loadingOverlay?.remove(), 300);
-    }
+  renderBook(book) {
+    const id = book.folderId || book.id;
+    const isBlocked = needsAgeGate(book) && !this.ageGate.confirmed;
+    const url = bookUrl(id);
+    const linkAttrs = isBlocked ? `href="${url}" data-blocked-link="${id}"` : `href="${url}"`;
+    const cover = book.cover
+      ? `<img class="book-cover" src="./books/${id}/${escapeHtml(book.cover)}" alt="Обложка: ${escapeHtml(book.title)}" loading="lazy">`
+      : `<div class="book-cover-placeholder">${escapeHtml((book.title || "?").slice(0, 1))}</div>`;
+    const tags = (book.tags ?? []).map((tag) => `<span class="book-tag">${icon("tag", 12)}${escapeHtml(tag)}</span>`).join("");
+    const meta = [
+      { icon: book.finished ? "check-circle" : "refresh", text: book.finished ? "Завершено" : "В процессе", hint: "Статус произведения" },
+      book.writtenDate ? { icon: "calendar", text: formatDate(book.writtenDate), hint: "Дата публикации" } : null,
+      { icon: "book-open", text: formatChaptersCount(book.totalChapters ?? 1), hint: "Количество глав" },
+      book.hasMedia ? { icon: "audio", text: "аудио", hint: "Есть аудио" } : null,
+      book.hasHints ? { icon: "lightbulb", text: "подсказки", hint: "Есть подсказки" } : null
+    ].filter(Boolean);
+    return `
+      <article class="book-card ${isBlocked ? "blocked" : ""}">
+        <a class="book-cover-link" ${linkAttrs}>${cover}</a>
+        ${Number(book.ageRating) > 0 ? `<span class="age-badge">${escapeHtml(book.ageRating)}+</span>` : ""}
+        ${isBlocked ? `<div class="blocked-message">18+ · подтвердите возраст</div>` : ""}
+        <div class="book-info">
+          <a class="book-title-link" ${linkAttrs}><h2 class="book-title">${escapeHtml(book.title)}</h2></a>
+          <p class="book-author">${escapeHtml(book.author || "Автор неизвестен")}</p>
+          <p class="book-description">${escapeHtml(book.description || "")}</p>
+          <div class="book-tags">${tags}</div>
+          <div class="book-meta">${meta.map((item) => `<span class="book-meta-item" title="${escapeHtml(item.hint)}" aria-label="${escapeHtml(`${item.hint}: ${item.text}`)}">${icon(item.icon, 14)}<span>${escapeHtml(item.text)}</span></span>`).join("")}</div>
+        </div>
+        <div class="book-card-tools">
+          <button class="icon-btn" type="button" data-copy-link="${id}" aria-label="Скопировать ссылку" title="Скопировать ссылку">${icon("copy", 18)}</button>
+        </div>
+      </article>
+    `;
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const app = new LibraryApp();
-  app.init();
-});
+function formatChaptersCount(count) {
+  const value = Number.parseInt(count, 10) || 0;
+  return `${value} ${pluralizeChapters(value)}`;
+}
+
+function pluralizeChapters(count) {
+  const last = count % 10;
+  const lastTwo = count % 100;
+  if (last === 1 && lastTwo !== 11) return "глава";
+  if ([2, 3, 4].includes(last) && ![12, 13, 14].includes(lastTwo)) return "главы";
+  return "глав";
+}
+
+customElements.define("lo-library-app", LitOverlayLibraryApp);

@@ -1,17 +1,28 @@
 {
+  "name": "LitOverlay",
+  "short_name": "LitOverlay",
+  "description": "Интерактивная библиотека произведений Греческого Салата",
+  "lang": "ru",
   "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#202124",
+  "theme_color": "#202124",
+  "icons": [
+    {
+      "src": "./favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ],
   "shortcuts": [
     {
       "name": "Библиотека",
-      "short_name": "Книги",
-      "description": "Перейти к списку книг",
       "url": "./index.html"
     },
     {
       "name": "От предвечной Тьмы к лунному Свету",
-      "short_name": "От предвечной Тьмы к лунному Свету",
-      "description": "Читать книгу «От предвечной Тьмы к лунному Свету»",
-      "url": "./book.html?id=mondschein&chapter=1"
+      "url": "./book.html?id=mondschein"
     }
   ]
 }
