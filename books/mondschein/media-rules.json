@@ -195,6 +195,24 @@
       "anchor": "Я освободилась. Приезжай. Только возьми пару мороженок."
     },
     {
+      "id": "image-15-1",
+      "type": "image",
+      "src": ["media/images/ch15comments.png"],
+      "format": "image/png",
+      "chapter": 15,
+      "position": "instead",
+      "anchor": "получили, гады!"
+    },
+    {
+      "id": "image-16-1",
+      "type": "image",
+      "src": ["media/images/ch16comments.png"],
+      "format": "image/png",
+      "chapter": 16,
+      "position": "instead",
+      "anchor": "го создадим крипту, teacoin"
+    },
+    {
       "id": "image-17-1",
       "type": "image",
       "src": ["media/images/chat2.png"],
@@ -212,6 +230,15 @@
       "position": "before",
       "anchor": "Все смеялись, разговаривали, шутили. Катя неторопливо пила вино",
       "caption": "слева направо: Юра, Лида, Катя, Матвей, Игорь, Настя"
+    },
+    {
+      "id": "image-19-1",
+      "type": "image",
+      "src": ["media/images/ch19comments.png"],
+      "format": "image/png",
+      "chapter": 19,
+      "position": "instead",
+      "anchor": "Back on the road, baby!"
     },
     {
       "id": "image-20-1",
@@ -347,6 +374,24 @@
       "chapter": 25,
       "position": "instead",
       "anchor": "Попробуй обратиться вот к этому врачу."
+    },
+    {
+      "id": "image-26-1",
+      "type": "image",
+      "src": ["media/images/ch26comments.png"],
+      "format": "image/png",
+      "chapter": 26,
+      "position": "instead",
+      "anchor": "пацан к успеху шёл, не получилось, не фартануло"
+    },
+    {
+      "id": "image-27-1",
+      "type": "image",
+      "src": ["media/images/ch27comments.png"],
+      "format": "image/png",
+      "chapter": 27,
+      "position": "instead",
+      "anchor": "Говорящие головы сняли ошейники?"
     },
     {
       "id": "image-31-1",
