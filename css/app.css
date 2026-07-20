@@ -76,8 +76,23 @@ body {
   line-height: var(--line-height);
 }
 
+@media (max-width: 768px) {
+  body::after {
+    content: "";
+    position: fixed;
+    right: 0;
+    bottom: env(safe-area-inset-bottom, 0px);
+    left: 0;
+    z-index: 20000;
+    height: 1px;
+    background: var(--toolbar-border);
+    pointer-events: none;
+  }
+}
+
 body.reader-page {
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -694,10 +709,12 @@ a:hover {
 lo-reader-app {
   display: block;
   height: 100vh;
+  height: 100dvh;
 }
 
 .reader-shell {
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -840,13 +857,10 @@ lo-reader-app {
   white-space: nowrap;
 }
 
-.mobile-search-toggle {
-  display: none;
-}
-
 .reader-body {
   position: relative;
   height: calc(100vh - 3.5rem);
+  height: calc(100dvh - 3.5rem);
   overflow: hidden;
 }
 
@@ -2165,10 +2179,6 @@ u[data-hint]:focus-visible {
     visibility: visible;
   }
 
-  .mobile-search-toggle {
-    display: inline-flex;
-  }
-
   .reader-progress {
     width: 100px;
     height: 1.75rem;
@@ -2189,6 +2199,10 @@ u[data-hint]:focus-visible {
 
   .chapter-navigation-inner {
     flex-direction: column;
+  }
+
+  .chapter-navigation {
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
   }
 
   .audio-dropdown {

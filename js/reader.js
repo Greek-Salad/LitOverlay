@@ -86,7 +86,6 @@ class LitOverlayReaderApp extends HTMLElement {
                 </div>
                 <button class="icon-btn" type="button" data-search-next aria-label="Следующее вхождение" title="Следующее вхождение">${icon("chevron-right", 16)}</button>
               </div>
-              <button class="icon-btn mobile-search-toggle" type="button" data-mobile-search aria-label="Поиск">${icon("search", 20)}</button>
               <button class="icon-btn" type="button" data-audio-toggle aria-label="Аудиоплеер">${icon("audio", 20)}</button>
               <div class="audio-dropdown" data-audio-dropdown><div data-audio-content></div></div>
             </div>
@@ -240,7 +239,6 @@ class LitOverlayReaderApp extends HTMLElement {
       if (audioToggle.contains(event.target) || this.nodes.audioDropdown.contains(event.target)) return;
       this.nodes.audioDropdown.classList.remove("open");
     });
-    $("[data-mobile-search]", this).addEventListener("click", () => $("[data-search-controls]", this).classList.toggle("open"));
     $("[data-warnings]", this).addEventListener("click", () => this.toggleWarnings());
     $("[data-prev]", this).addEventListener("click", () => this.goToAdjacent("prev"));
     $("[data-next]", this).addEventListener("click", () => this.goToAdjacent("next"));

@@ -125,6 +125,49 @@ for (const book of books) {
 
 assert.ok(shortFooterChecks >= 1, `Expected at least one non-scrollable preface for footer layout coverage: ${JSON.stringify(results)}`);
 
+await send("Emulation.setDeviceMetricsOverride", {
+  width: 390,
+  height: 844,
+  deviceScaleFactor: 2,
+  mobile: true
+});
+await send("Page.navigate", { url: `${baseUrl}/book.html?id=hellfire` });
+await waitFor("document.readyState === 'complete'");
+await waitFor("document.querySelector('lo-reader-app')?.bookId === 'hellfire' && !document.querySelector('.age-gate-card')");
+await evaluate(`(() => {
+  const area = document.querySelector('[data-reading-area]');
+  area.scrollTop = area.scrollHeight;
+})()`);
+await waitFor("Math.abs(document.querySelector('.chapter-navigation')?.getBoundingClientRect().bottom - document.querySelector('[data-reading-area]')?.getBoundingClientRect().bottom) <= 1");
+const mobileFooter = await evaluate(`(() => {
+  const nav = document.querySelector('.chapter-navigation');
+  const inner = document.querySelector('.chapter-navigation-inner');
+  const navStyle = getComputedStyle(nav);
+  const appSeparatorStyle = getComputedStyle(document.body, '::after');
+  const navRect = nav.getBoundingClientRect();
+  const innerRect = inner.getBoundingClientRect();
+  return {
+    viewportHeight: window.innerHeight,
+    navBottom: Math.round(navRect.bottom),
+    innerBottom: Math.round(innerRect.bottom),
+    buttonSafeGap: Math.round(navRect.bottom - innerRect.bottom),
+    paddingBottom: navStyle.paddingBottom,
+    appSeparatorContent: appSeparatorStyle.content,
+    appSeparatorHeight: appSeparatorStyle.height,
+    appSeparatorPosition: appSeparatorStyle.position,
+    appSeparatorPointerEvents: appSeparatorStyle.pointerEvents,
+    appSeparatorBackground: appSeparatorStyle.backgroundColor,
+    mobileSearchButton: Boolean(document.querySelector('[data-mobile-search]'))
+  };
+})()`);
+assert.ok(mobileFooter.navBottom <= mobileFooter.viewportHeight + 1, `Expected mobile footer inside visual viewport: ${JSON.stringify(mobileFooter)}`);
+assert.ok(mobileFooter.buttonSafeGap >= 10, `Expected mobile footer buttons above system bar buffer: ${JSON.stringify(mobileFooter)}`);
+assert.equal(mobileFooter.appSeparatorHeight, "1px", `Expected 1px global mobile system separator: ${JSON.stringify(mobileFooter)}`);
+assert.equal(mobileFooter.appSeparatorPosition, "fixed", `Expected fixed global mobile system separator: ${JSON.stringify(mobileFooter)}`);
+assert.equal(mobileFooter.appSeparatorPointerEvents, "none", `Expected non-interactive global mobile system separator: ${JSON.stringify(mobileFooter)}`);
+assert.notEqual(mobileFooter.appSeparatorBackground, "rgba(0, 0, 0, 0)", `Expected visible global mobile system separator: ${JSON.stringify(mobileFooter)}`);
+assert.equal(mobileFooter.mobileSearchButton, false, `Expected reader mobile search toggle removed: ${JSON.stringify(mobileFooter)}`);
+
 socket.close();
 
-console.log("Browser routing passed.", { rootValue, results });
+console.log("Browser routing passed.", { rootValue, results, mobileFooter });
