@@ -211,6 +211,55 @@ const warningValue = await evaluate(`(() => {
   };
 })()`);
 
+const codeStyleValue = await evaluate(`(() => {
+  const host = document.createElement('p');
+  host.innerHTML = 'Проверка <code>const value = 1;</code>';
+  document.querySelector('[data-chapter-content]').append(host);
+  const code = host.querySelector('code');
+  const style = getComputedStyle(code);
+  const bodyStyle = getComputedStyle(document.body);
+  const value = {
+    fontFamily: style.fontFamily,
+    backgroundColor: style.backgroundColor,
+    bodyBackgroundColor: bodyStyle.backgroundColor,
+    borderTopStyle: style.borderTopStyle,
+    borderTopWidth: style.borderTopWidth,
+    paddingLeft: style.paddingLeft,
+    borderRadius: style.borderTopLeftRadius
+  };
+  host.remove();
+  return value;
+})()`);
+
+await send("Emulation.setDeviceMetricsOverride", {
+  width: 390,
+  height: 760,
+  deviceScaleFactor: 2,
+  mobile: true
+});
+await new Promise((resolve) => setTimeout(resolve, 150));
+const mobileProgressValue = await evaluate(`new Promise((resolve) => {
+  const area = document.querySelector('[data-reading-area]');
+  const app = document.querySelector('lo-reader-app');
+  area.scrollTop = 0;
+  app.updateProgressIndicator();
+  requestAnimationFrame(() => {
+    const max = Math.max(1, area.scrollHeight - area.clientHeight);
+    area.scrollTop = Math.round(max * 0.58);
+    area.dispatchEvent(new Event('scroll'));
+    requestAnimationFrame(() => {
+      const displayed = Number.parseInt(document.querySelector('[data-progress]')?.textContent || '0', 10);
+      const expected = Math.round((area.scrollTop / max) * 100);
+      resolve({
+        max,
+        expected,
+        displayed,
+        progressText: document.querySelector('[data-progress]')?.textContent || ''
+      });
+    });
+  });
+})`);
+
 await send("Page.navigate", { url: cleanTargetUrl });
 await waitFor("document.readyState === 'complete'");
 await waitFor("Boolean(document.querySelector('[data-confirm]') || document.querySelector('[data-chapter-content] h2'))");
@@ -267,7 +316,15 @@ assert.equal(warningValue.closedColor, "rgb(249, 171, 0)", `Expected warnings ic
 assert.equal(warningValue.ariaExpanded, "true", `Expected warnings popover expanded state: ${JSON.stringify(warningValue)}`);
 assert.equal(warningValue.popoverHidden, false, `Expected warnings popover open: ${JSON.stringify(warningValue)}`);
 assert.match(warningValue.popoverText, /media: не загрузился файл/, `Expected media file warning text: ${JSON.stringify(warningValue)}`);
+assert.match(codeStyleValue.fontFamily, /SourceCodePro|Source Code Pro/, `Expected code to use SourceCodePro stack: ${JSON.stringify(codeStyleValue)}`);
+assert.notEqual(codeStyleValue.backgroundColor, codeStyleValue.bodyBackgroundColor, `Expected inline code background to differ from body: ${JSON.stringify(codeStyleValue)}`);
+assert.notEqual(codeStyleValue.borderTopStyle, "none", `Expected inline code border: ${JSON.stringify(codeStyleValue)}`);
+assert.ok(Number.parseFloat(codeStyleValue.borderTopWidth) >= 1, `Expected inline code border width: ${JSON.stringify(codeStyleValue)}`);
+assert.ok(Number.parseFloat(codeStyleValue.paddingLeft) > 0, `Expected inline code padding: ${JSON.stringify(codeStyleValue)}`);
+assert.ok(Number.parseFloat(codeStyleValue.borderRadius) > 0, `Expected inline code radius: ${JSON.stringify(codeStyleValue)}`);
+assert.ok(mobileProgressValue.max > 0, `Expected scrollable mobile chapter: ${JSON.stringify(mobileProgressValue)}`);
+assert.ok(Math.abs(mobileProgressValue.displayed - mobileProgressValue.expected) <= 1, `Expected mobile progress to update on next animation frame: ${JSON.stringify(mobileProgressValue)}`);
 assert.equal(cleanUrlValue.hasReader, true, `Expected /book clean URL to render reader: ${JSON.stringify(cleanUrlValue)}`);
 assert.equal(cleanUrlValue.hasLauncher, true, `Expected /book clean URL to render audio launchers: ${JSON.stringify(cleanUrlValue)}`);
 assert.ok(cleanUrlValue.title.includes("Глава 15"), `Expected clean URL chapter 15, got ${JSON.stringify(cleanUrlValue)}`);
-console.log("Browser smoke passed.", { value, ageGateValue, audioValue, searchValue, warningValue, cleanUrlValue });
+console.log("Browser smoke passed.", { value, ageGateValue, audioValue, searchValue, warningValue, codeStyleValue, mobileProgressValue, cleanUrlValue });
