@@ -48,8 +48,8 @@ class LitOverlayReaderApp extends HTMLElement {
     this.currentChapter = null;
     this.warnings = [];
     this.titleLoadingStarted = false;
+    this.progressFrame = 0;
     this.saveProgress = debounce(() => this.persistProgress(), 1000);
-    this.updateProgress = debounce(() => this.updateProgressIndicator(), 20);
   }
 
   connectedCallback() {
@@ -243,7 +243,7 @@ class LitOverlayReaderApp extends HTMLElement {
     $("[data-prev]", this).addEventListener("click", () => this.goToAdjacent("prev"));
     $("[data-next]", this).addEventListener("click", () => this.goToAdjacent("next"));
     this.nodes.readingArea.addEventListener("scroll", () => {
-      this.updateProgress();
+      this.queueProgressUpdate();
       this.saveProgress();
     });
     document.addEventListener("keydown", (event) => this.handleGlobalKeys(event));
@@ -519,6 +519,14 @@ class LitOverlayReaderApp extends HTMLElement {
     if (this.resolver.resolvedAll && this.currentChapter === this.resolver.getLastChapterNumber() && percent >= 99) {
       markBookCompleted(this.bookId);
     }
+  }
+
+  queueProgressUpdate() {
+    if (this.progressFrame) return;
+    this.progressFrame = window.requestAnimationFrame(() => {
+      this.progressFrame = 0;
+      this.updateProgressIndicator();
+    });
   }
 
   persistProgress() {
