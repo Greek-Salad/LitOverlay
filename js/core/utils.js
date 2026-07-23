@@ -126,6 +126,11 @@ export function sanitizeTrustedHtml(html) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(String(html ?? ""), "text/html");
   doc.querySelectorAll("script, object, embed").forEach((node) => node.remove());
+  doc.querySelectorAll("iframe").forEach((node) => {
+    node.removeAttribute("srcdoc");
+    const src = (node.getAttribute("src") || "").trim();
+    if (!/^https?:\/\//i.test(src)) node.remove();
+  });
   doc.querySelectorAll("*").forEach((node) => {
     for (const attr of Array.from(node.attributes)) {
       const name = attr.name.toLowerCase();

@@ -100,8 +100,8 @@ export class AudioController {
         <div class="audio-launcher-row">
           <button class="icon-btn" type="button" data-play aria-label="Воспроизвести">${icon("play", 20)}</button>
           <div class="audio-track-text">
-            <div class="audio-track-artist">${track.artist || "Аудио"}</div>
-            <div class="audio-track-title">${track.title}</div>
+            <div class="audio-track-artist">${escapeHtml(track.artist || "Аудио")}</div>
+            <div class="audio-track-title">${escapeHtml(track.title)}</div>
           </div>
           ${track.lyrics ? `<button class="icon-btn" type="button" data-lyrics aria-label="Показать текст">${icon("lyrics", 16)}</button>` : ""}
         </div>

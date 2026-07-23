@@ -78,6 +78,11 @@ export class MediaInjector {
     figure.hidden = true;
     target.dataset.mediaFallback = "true";
     const images = Array.from(figure.querySelectorAll("img"));
+    if (!images.length) {
+      target.remove();
+      figure.hidden = false;
+      return;
+    }
     let settled = 0;
     let failed = false;
     const finish = () => {
@@ -110,7 +115,11 @@ export class MediaInjector {
         failed = true;
         finish();
       }, { once: true });
-      if (img.complete && img.naturalWidth > 0) finish();
+      if (img.complete) {
+        // Cached image already settled: load/error fired before we subscribed.
+        if (img.naturalWidth === 0) failed = true;
+        finish();
+      }
     }
   }
 

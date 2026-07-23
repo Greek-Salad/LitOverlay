@@ -49,6 +49,7 @@ class LitOverlayReaderApp extends HTMLElement {
     this.warnings = [];
     this.titleLoadingStarted = false;
     this.progressFrame = 0;
+    this.navToken = 0;
     this.saveProgress = debounce(() => this.persistProgress(), 1000);
   }
 
@@ -247,9 +248,6 @@ class LitOverlayReaderApp extends HTMLElement {
       this.saveProgress();
     });
     document.addEventListener("keydown", (event) => this.handleGlobalKeys(event));
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) this.audio?.pauseAll();
-    });
     window.addEventListener("beforeunload", () => this.audio?.pauseAll());
   }
 
@@ -320,6 +318,12 @@ class LitOverlayReaderApp extends HTMLElement {
         await this.goToChapter(progress.chapter, { scrollPercent: progress.scrollPercent });
         return;
       }
+      if (result === "start") {
+        const first = await this.resolver.resolveFirstAvailable();
+        if (!first) throw new Error("В книге не найдено ни одной главы");
+        await this.goToChapter(first.number, { scrollPercent: 0 });
+        return;
+      }
     }
     if (this.legacyLastChapter !== null) {
       const chapter = await this.resolver.resolveNumber(this.legacyLastChapter);
@@ -334,6 +338,8 @@ class LitOverlayReaderApp extends HTMLElement {
   }
 
   async goToChapter(chapterNumber, options = {}) {
+    // Guard against overlapping navigations: only the most recent request may touch the DOM.
+    const token = ++this.navToken;
     this.nodes.loading.classList.add("visible");
     this.search?.clear();
     this.hints?.destroy();
@@ -341,14 +347,17 @@ class LitOverlayReaderApp extends HTMLElement {
     this.updateWarnings();
     try {
       let chapter = await this.resolver.resolveNumber(chapterNumber);
+      if (token !== this.navToken) return;
       if (!chapter) {
         await this.resolver.resolve();
+        if (token !== this.navToken) return;
         const nearest = this.resolver.getNearest(Number(chapterNumber));
         chapter = this.resolver.getChapter(nearest);
       }
       if (!chapter) throw new Error(`Глава ${chapterNumber} не найдена`);
       const number = chapter.number;
       const html = await this.resolver.loadChapterHtml(number);
+      if (token !== this.navToken) return;
       this.nodes.content.innerHTML = html;
       rewriteChapterMediaPaths(this.nodes.content, this.bookId);
       this.currentChapter = number;
@@ -374,9 +383,9 @@ class LitOverlayReaderApp extends HTMLElement {
       await this.restoreScroll(options.scrollPercent || 0);
       this.persistProgress();
     } catch (error) {
-      this.renderError(error);
+      if (token === this.navToken) this.renderError(error);
     } finally {
-      this.nodes.loading.classList.remove("visible");
+      if (token === this.navToken) this.nodes.loading.classList.remove("visible");
     }
   }
 
@@ -389,9 +398,29 @@ class LitOverlayReaderApp extends HTMLElement {
 
   async restoreScroll(percent) {
     await new Promise((resolve) => requestAnimationFrame(resolve));
-    const max = Math.max(0, this.nodes.readingArea.scrollHeight - this.nodes.readingArea.clientHeight);
-    this.nodes.readingArea.scrollTop = max * (clamp(percent, 0, 100) / 100);
-    this.updateProgressIndicator();
+    const ratio = clamp(percent, 0, 100) / 100;
+    const token = this.navToken;
+    const apply = () => {
+      if (token !== this.navToken) return;
+      const max = Math.max(0, this.nodes.readingArea.scrollHeight - this.nodes.readingArea.clientHeight);
+      this.nodes.readingArea.scrollTop = max * ratio;
+      this.updateProgressIndicator();
+    };
+    apply();
+    if (ratio <= 0) return;
+    // Late image loads shift the layout; keep re-applying the percent until the reader scrolls manually.
+    const pending = Array.from(this.nodes.content.querySelectorAll("img")).filter((img) => !img.complete);
+    if (!pending.length) return;
+    let active = true;
+    const stop = () => { active = false; };
+    window.setTimeout(stop, 4000);
+    this.nodes.readingArea.addEventListener("wheel", stop, { once: true, passive: true });
+    this.nodes.readingArea.addEventListener("touchstart", stop, { once: true, passive: true });
+    for (const img of pending) {
+      img.addEventListener("load", () => {
+        if (active) apply();
+      }, { once: true });
+    }
   }
 
   renderChapterList() {
@@ -750,7 +779,7 @@ class LitOverlayReaderApp extends HTMLElement {
       event.preventDefault();
       this.audio?.toggle();
     }
-    if (event.key.toLowerCase() === "m") this.audio?.setMuted(!this.audio.settings.muted);
+    if (event.code === "KeyM") this.audio?.setMuted(!this.audio.settings.muted);
     if (event.ctrlKey && event.key === "ArrowRight") this.audio?.next();
     if (event.ctrlKey && event.key === "ArrowLeft") this.audio?.previous();
   }
