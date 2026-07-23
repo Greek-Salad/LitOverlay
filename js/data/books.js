@@ -51,6 +51,7 @@ export class ChapterResolver {
     this.titleByNumber = new Map();
     this.absentNumbers = new Set();
     this.resolvePromises = new Map();
+    this.textCache = new Map();
     this.preferredChapterWidth = null;
     this.resolvedAll = false;
   }
@@ -196,10 +197,23 @@ export class ChapterResolver {
     };
   }
 
+  getChapterText(number) {
+    const file = this.getFile(number);
+    if (!file) return Promise.reject(new Error(`Глава ${number} не найдена`));
+    if (!this.textCache.has(number)) {
+      const promise = fetchText(this.pathFor(file)).catch((error) => {
+        this.textCache.delete(number);
+        throw error;
+      });
+      this.textCache.set(number, promise);
+    }
+    return this.textCache.get(number);
+  }
+
   async loadTitle(number) {
     const file = this.getFile(number);
     if (!file) return null;
-    const html = await fetchText(this.pathFor(file));
+    const html = await this.getChapterText(number);
     const doc = new DOMParser().parseFromString(html, "text/html");
     const title = doc.querySelector("h1, h2")?.textContent?.trim();
     const fallback = number === 0 ? "Предисловие" : `Глава ${number}`;
@@ -211,9 +225,7 @@ export class ChapterResolver {
   }
 
   async loadChapterHtml(number) {
-    const file = this.getFile(number);
-    if (!file) throw new Error(`Глава ${number} не найдена`);
-    const html = await fetchText(this.pathFor(file));
+    const html = await this.getChapterText(number);
     return sanitizeTrustedHtml(html);
   }
 }

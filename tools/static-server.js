@@ -123,5 +123,5 @@ const server = createServer((request, response) => {
 });
 
 server.listen(port, host, () => {
-  console.log(`LitOverlayRemaster dev server: http://${host}:${port}/`);
+  console.log(`LitOverlay dev server: http://${host}:${port}/`);
 });

@@ -319,4 +319,24 @@ assert.deepEqual(lazyResolver.chapters.map((chapter) => chapter.number), [15]);
 assert.equal(lazyResolver.resolvedAll, false);
 assert.ok(lazyRequests.every((request) => request.url.includes("/15.html")));
 
+const cachedExisting = new Set(["./books/cached/chapters/05.html"]);
+let cachedTextFetches = 0;
+globalThis.fetch = async (url, options = {}) => {
+  const method = options.method || "GET";
+  if (method === "GET" && url === "./books/cached/chapters/05.html") cachedTextFetches += 1;
+  return {
+    ok: cachedExisting.has(url),
+    status: cachedExisting.has(url) ? 200 : 404,
+    json: async () => ({}),
+    text: async () => "<h2>Глава 5</h2><p>Текст</p>"
+  };
+};
+const cachedResolver = new ChapterResolver("cached", { totalChapters: 5 });
+await cachedResolver.resolveNumber(5);
+const firstText = await cachedResolver.getChapterText(5);
+const secondText = await cachedResolver.getChapterText(5);
+assert.equal(firstText, secondText);
+assert.equal(cachedTextFetches, 1, "Chapter text must be fetched once and served from cache afterwards");
+await assert.rejects(() => cachedResolver.getChapterText(6), /Глава 6 не найдена/);
+
 console.log("Unit checks passed.");
