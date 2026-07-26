@@ -39,6 +39,7 @@ import { AudioController } from "./reader/audio.js";
 import { MediaInjector } from "./reader/media.js";
 import { HintInjector } from "./reader/hints.js";
 import { CustomColorPicker } from "./reader/color-picker.js";
+import { ImageLightbox } from "./reader/lightbox.js";
 
 class LitOverlayReaderApp extends HTMLElement {
   constructor() {
@@ -55,6 +56,7 @@ class LitOverlayReaderApp extends HTMLElement {
     this.progressFrame = 0;
     this.navToken = 0;
     this.saveProgress = debounce(() => this.persistProgress(), 1000);
+    this.lightbox = new ImageLightbox();
   }
 
   connectedCallback() {
@@ -251,6 +253,7 @@ class LitOverlayReaderApp extends HTMLElement {
       this.queueProgressUpdate();
       this.saveProgress();
     });
+    this.lightbox.attach(this.nodes.content);
     document.addEventListener("keydown", (event) => this.handleGlobalKeys(event));
     window.addEventListener("beforeunload", () => this.audio?.pauseAll());
     document.addEventListener("visibilitychange", () => {
