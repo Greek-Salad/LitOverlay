@@ -2318,3 +2318,37 @@ u[data-hint]:focus-visible {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* === IMAGE LIGHTBOX (просмотр картинок главы) === */
+[data-chapter-content] img {
+  cursor: zoom-in;
+}
+
+.image-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(16px, 4vw, 40px);
+  background: rgba(8, 10, 14, 0.88);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  cursor: zoom-out;
+}
+
+.image-lightbox.visible {
+  opacity: 1;
+}
+
+.image-lightbox-img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+  cursor: default;
+}

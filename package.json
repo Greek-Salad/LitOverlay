@@ -13,6 +13,7 @@
     "browser-audio-seek": "node tests/browser-audio-seek.js",
     "browser-settings-overflow": "node tests/browser-settings-overflow.js",
     "browser-hints": "node tests/browser-hints.js",
-    "serve": "node tools/static-server.js 8000"
+    "serve": "node tools/static-server.js 8000",
+    "browser-lightbox": "node tests/browser-lightbox.js"
   }
 }
