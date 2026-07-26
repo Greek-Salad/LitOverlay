@@ -379,6 +379,15 @@
     {
       "id": "image-26-1",
       "type": "image",
+      "src": ["media/images/tea_avenger_com.png"],
+      "format": "image/png",
+      "chapter": 26,
+      "position": "after",
+      "anchor": "анонимно рассказать «Чайному Мстителю», кого ещё нужно покарать"
+    },
+    {
+      "id": "image-26-2",
+      "type": "image",
       "src": ["media/images/ch26comments.png"],
       "format": "image/png",
       "chapter": 26,
