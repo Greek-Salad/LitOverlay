@@ -339,4 +339,24 @@ assert.equal(firstText, secondText);
 assert.equal(cachedTextFetches, 1, "Chapter text must be fetched once and served from cache afterwards");
 await assert.rejects(() => cachedResolver.getChapterText(6), /Глава 6 не найдена/);
 
+// Network failure must not mark chapters absent: a suspended mobile tab would
+// otherwise permanently lose real chapters until a full page reload.
+let networkUp = false;
+const flakyExisting = new Set(["./books/flaky/chapters/07.html"]);
+globalThis.fetch = async (url) => {
+  if (!networkUp) throw new TypeError("Failed to fetch");
+  return {
+    ok: flakyExisting.has(url),
+    status: flakyExisting.has(url) ? 200 : 404,
+    json: async () => ({}),
+    text: async () => "<h2>Глава 7</h2>"
+  };
+};
+const flakyResolver = new ChapterResolver("flaky", { totalChapters: 7 });
+await assert.rejects(() => flakyResolver.resolveNumber(7), /Failed to fetch/);
+assert.equal(flakyResolver.absentNumbers.has(7), false, "Network failure must not mark chapter 7 absent");
+networkUp = true;
+const recovered = await flakyResolver.resolveNumber(7);
+assert.equal(recovered?.number, 7, "Chapter must resolve once the network is back");
+
 console.log("Unit checks passed.");

@@ -47,7 +47,11 @@ class LitOverlayReaderApp extends HTMLElement {
     this.bookId = getBookIdFromLocation() || "mondschein";
     this.currentChapter = null;
     this.warnings = [];
-    this.titleLoadingStarted = false;
+    this.titleLoadingRunning = false;
+    this.loadedTitleNumbers = new Set();
+    this.failedTitleNumbers = new Set();
+    this.titleRetryTimer = null;
+    this.titleRetryAttempts = 0;
     this.progressFrame = 0;
     this.navToken = 0;
     this.saveProgress = debounce(() => this.persistProgress(), 1000);
@@ -249,6 +253,17 @@ class LitOverlayReaderApp extends HTMLElement {
     });
     document.addEventListener("keydown", (event) => this.handleGlobalKeys(event));
     window.addEventListener("beforeunload", () => this.audio?.pauseAll());
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) return;
+      // Возвращение на вкладку (например, утром после ночной заморозки):
+      // добираем главы и заголовки, не дожившие до конца фоновой загрузки.
+      this.titleRetryAttempts = 0;
+      if (this.titleRetryTimer) {
+        window.clearTimeout(this.titleRetryTimer);
+        this.titleRetryTimer = null;
+      }
+      this.resumeBackgroundLoading();
+    });
   }
 
   async init() {
@@ -454,26 +469,70 @@ class LitOverlayReaderApp extends HTMLElement {
       });
       this.renderChapterList();
       this.updateNavigation();
+      this.clearWarning("chapter-list", "chapter-list");
       await this.loadTitlesInBackground();
     } catch (error) {
+      // Network hiccup (e.g. suspended mobile tab): allow a later retry pass.
+      this.chapterResolveStarted = false;
       this.reportWarning({ type: "chapter-list", id: "chapter-list", chapter: this.currentChapter ?? 0, anchor: "Оглавление" });
+      this.scheduleBackgroundRetry();
     }
   }
 
   async loadTitlesInBackground() {
-    if (this.titleLoadingStarted) return;
-    this.titleLoadingStarted = true;
-    for (const chapter of this.resolver.chapters) {
-      try {
-        const title = await this.resolver.loadTitle(chapter.number);
-        const link = this.nodes.chapterList.querySelector(`[data-chapter="${chapter.number}"]`);
-        if (link && title) link.textContent = title;
-        this.updateNavigation();
-        await new Promise((resolve) => window.setTimeout(resolve, 20));
-      } catch (error) {
-        this.reportWarning({ type: "chapter-title", id: `chapter-${chapter.number}`, chapter: chapter.number, anchor: "Заголовок главы" });
+    if (this.titleLoadingRunning) return;
+    this.titleLoadingRunning = true;
+    try {
+      const pending = this.resolver.chapters
+        .map((chapter) => chapter.number)
+        .filter((number) => !this.loadedTitleNumbers.has(number));
+      for (const number of pending) {
+        try {
+          const title = await this.resolver.loadTitle(number);
+          this.loadedTitleNumbers.add(number);
+          this.failedTitleNumbers.delete(number);
+          this.clearWarning("chapter-title", `chapter-${number}`);
+          const link = this.nodes.chapterList.querySelector(`[data-chapter="${number}"]`);
+          if (link && title) link.textContent = title;
+          this.updateNavigation();
+          await new Promise((resolve) => window.setTimeout(resolve, 20));
+        } catch (error) {
+          this.failedTitleNumbers.add(number);
+          this.reportWarning({ type: "chapter-title", id: `chapter-${number}`, chapter: number, anchor: "Заголовок главы" });
+        }
       }
+    } finally {
+      this.titleLoadingRunning = false;
     }
+    if (this.failedTitleNumbers.size) this.scheduleBackgroundRetry();
+  }
+
+  scheduleBackgroundRetry() {
+    if (this.titleRetryTimer) return;
+    this.titleRetryAttempts += 1;
+    if (this.titleRetryAttempts > 6) return;   // дальше — только по возвращении на вкладку
+    const delay = Math.min(60000, 2000 * 2 ** (this.titleRetryAttempts - 1));
+    this.titleRetryTimer = window.setTimeout(() => {
+      this.titleRetryTimer = null;
+      this.resumeBackgroundLoading();
+    }, delay);
+  }
+
+  resumeBackgroundLoading() {
+    if (!this.resolver) return;
+    if (!this.resolver.resolvedAll) {
+      this.resolveChaptersInBackground();
+      return;
+    }
+    if (this.failedTitleNumbers.size) this.loadTitlesInBackground();
+  }
+
+  clearWarning(type, id) {
+    const before = this.warnings.length;
+    this.warnings = this.warnings.filter(
+      (item) => !(item.type === type && String(item.id ?? "") === String(id ?? ""))
+    );
+    if (this.warnings.length !== before) this.updateWarnings();
   }
 
   updateNavigation() {
