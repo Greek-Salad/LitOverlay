@@ -177,12 +177,11 @@ export async function urlExists(url) {
   } catch (error) {
     // Some static servers do not like HEAD. Fall back to a normal fetch below.
   }
-  try {
-    const response = await fetch(url);
-    return response.ok;
-  } catch (error) {
-    return false;
-  }
+  // Network failure here must NOT read as "file does not exist": a suspended
+  // mobile tab or sleeping radio would otherwise mark real chapters absent
+  // until a full reload. Let the rejection propagate so callers can retry.
+  const response = await fetch(url);
+  return response.ok;
 }
 
 export function splitTrackTitle(title = "") {

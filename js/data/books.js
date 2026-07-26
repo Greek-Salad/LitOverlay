@@ -97,6 +97,11 @@ export class ChapterResolver {
         return null;
       }
       return this.addChapter(normalized, file);
+    }, (error) => {
+      // Network failure: forget the attempt entirely so a later call retries,
+      // and never mark the chapter as absent — we simply do not know yet.
+      this.resolvePromises.delete(normalized);
+      throw error;
     });
     this.resolvePromises.set(normalized, promise);
     return promise;

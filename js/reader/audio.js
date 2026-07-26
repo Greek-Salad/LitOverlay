@@ -450,7 +450,18 @@ export class AudioController {
     if (progressSlider) progressSlider.setAttribute("aria-valuenow", String(Math.round(progress)));
     if (volumeBar) volumeBar.style.width = `${this.settings.volume * 100}%`;
     if (volumeSlider) volumeSlider.setAttribute("aria-valuenow", String(Math.round(this.settings.volume * 100)));
-    if (muteButton) muteButton.innerHTML = icon(this.settings.muted ? "muted" : "volume", 20);
+    if (muteButton) {
+      // Rewriting the icon on every timeupdate tick destroys the node mid-click
+      // and the browser never fires "click"; only touch it on actual state change.
+      const state = this.settings.muted ? "muted" : "volume";
+      if (muteButton.dataset.muteState !== state) {
+        muteButton.dataset.muteState = state;
+        muteButton.innerHTML = icon(state, 20);
+        const label = this.settings.muted ? "Включить звук" : "Отключить звук";
+        muteButton.setAttribute("aria-label", label);
+        muteButton.setAttribute("title", label);
+      }
+    }
   }
 
   syncLaunchers() {
