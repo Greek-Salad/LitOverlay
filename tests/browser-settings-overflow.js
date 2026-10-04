@@ -105,7 +105,7 @@ async function measure(width, height) {
       contentScroll: content.scrollWidth,
       overflowX: getComputedStyle(content).overflowX,
       fontOptions: {
-        whitney: getComputedStyle(panel.querySelector('[data-font-family] option[value="Whitney"]')).fontFamily,
+        roboto: getComputedStyle(panel.querySelector('[data-font-family] option[value="Roboto"]')).fontFamily,
         antiqua: getComputedStyle(panel.querySelector('[data-font-family] option[value="Antiqua"]')).fontFamily,
         sourceCodePro: getComputedStyle(panel.querySelector('[data-font-family] option[value="SourceCodePro"]')).fontFamily
       },
@@ -137,7 +137,7 @@ for (const result of [desktop, mobile]) {
     result.contentScroll <= result.contentClient + 1,
     `Settings content overflows at ${result.width}px: ${JSON.stringify(result)}`
   );
-  assert.ok(result.fontOptions.whitney.includes("Whitney"), `Whitney option font mismatch: ${JSON.stringify(result.fontOptions)}`);
+  assert.ok(result.fontOptions.roboto.includes("Roboto"), `Roboto option font mismatch: ${JSON.stringify(result.fontOptions)}`);
   assert.ok(result.fontOptions.antiqua.includes("Antiqua"), `Antiqua option font mismatch: ${JSON.stringify(result.fontOptions)}`);
   assert.ok(result.fontOptions.sourceCodePro.includes("SourceCodePro"), `SourceCodePro option font mismatch: ${JSON.stringify(result.fontOptions)}`);
   assert.equal(result.focusedSlider.outlineStyle, "none", `Expected settings slider focus without outline: ${JSON.stringify(result.focusedSlider)}`);

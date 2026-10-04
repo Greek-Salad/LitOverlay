@@ -202,6 +202,30 @@ export class ChapterResolver {
     };
   }
 
+  // Соседи по уже проверенным номерам: глава; null — соседа точно нет;
+  // undefined — между ним и текущей главой есть непроверенные номера.
+  getNeighbors(number) {
+    const max = this.getMaxChapterNumber();
+    const find = (step) => {
+      for (let candidate = number + step; candidate >= 0 && candidate <= max; candidate += step) {
+        if (this.fileByNumber.has(candidate)) return this.getChapter(candidate);
+        if (!this.absentNumbers.has(candidate)) return undefined;
+      }
+      return null;
+    };
+    return { prev: find(-1), next: find(1) };
+  }
+
+  // Ближайшая существующая глава в сторону step (−1 или +1); номера по пути проверяются.
+  async findNeighbor(number, step) {
+    const max = this.getMaxChapterNumber();
+    for (let candidate = number + step; candidate >= 0 && candidate <= max; candidate += step) {
+      const chapter = await this.resolveNumber(candidate);
+      if (chapter) return chapter;
+    }
+    return null;
+  }
+
   getChapterText(number) {
     const file = this.getFile(number);
     if (!file) return Promise.reject(new Error(`Глава ${number} не найдена`));

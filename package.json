@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tests/run-unit.js && node tests/check-anchors.js",
+    "test": "node tests/run-unit.js && node tests/check-anchors.js && node tools/count-volume.js --check",
     "check-anchors": "node tests/check-anchors.js",
+    "count-volume": "node tools/count-volume.js",
     "browser-library": "node tests/browser-library.js",
     "browser-routing": "node tests/browser-routing.js",
     "browser-smoke": "node tests/browser-smoke.js",
