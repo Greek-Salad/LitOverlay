@@ -12,6 +12,7 @@ const ICONS = {
   "book-open": '<path d="M12 7v14M4 5.5A3.5 3.5 0 0 1 7.5 2H12v17H7.5A3.5 3.5 0 0 0 4 22V5.5zM20 5.5A3.5 3.5 0 0 0 16.5 2H12v17h4.5A3.5 3.5 0 0 1 20 22V5.5z"/>',
   audio: '<path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />',
   lightbulb: '<path d="M9 18h6M10 22h4M8.5 15.5a6 6 0 1 1 7 0c-.75.58-1.5 1.45-1.5 2.5h-4c0-1.05-.75-1.92-1.5-2.5z"/>',
+  "file-text": '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
   "track-prev": '<path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />',
   "track-next": '<path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />',
   play: '<path d="M8 5v14l11-7z" />',
@@ -30,9 +31,9 @@ const ICONS = {
 export function icon(name, size = 20, attrs = {}) {
   if (name === "theme") return themeIcon(size, attrs);
   const viewBox = name === "menu" ? "0 0 18 18" : "0 0 24 24";
-  const lineIcons = ["menu", "home", "tag", "search", "trash", "copy", "check-circle", "refresh", "calendar", "book-open", "lightbulb", "warning"];
+  const lineIcons = ["menu", "home", "tag", "search", "trash", "copy", "check-circle", "refresh", "calendar", "book-open", "lightbulb", "file-text", "warning"];
   const fill = lineIcons.includes(name) ? "none" : "currentColor";
-  const strokeAttrs = ["menu", "home", "check-circle", "refresh", "calendar", "book-open", "lightbulb", "warning"].includes(name)
+  const strokeAttrs = ["menu", "home", "check-circle", "refresh", "calendar", "book-open", "lightbulb", "file-text", "warning"].includes(name)
     ? { stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round" }
     : {};
   const extra = Object.entries({ ...strokeAttrs, ...attrs }).map(([key, value]) => `${key}="${String(value)}"`).join(" ");

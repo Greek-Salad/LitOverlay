@@ -35,6 +35,14 @@ export function formatDate(value) {
   return new Intl.DateTimeFormat("ru-RU").format(date);
 }
 
+// Объём произведения для карточки: «456 507 зн., 11,41 а.л.» (авторский лист — 40 000 знаков).
+export function formatVolume(charCount) {
+  const chars = Math.max(0, Math.round(Number(charCount) || 0));
+  const grouped = String(chars).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  const sheets = (chars / 40000).toFixed(2).replace(".", ",");
+  return `${grouped} зн., ${sheets} а.л.`;
+}
+
 export function formatTimeAgo(timestamp) {
   const value = Number(timestamp);
   if (!Number.isFinite(value) || value <= 0) return "";

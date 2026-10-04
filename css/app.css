@@ -1250,10 +1250,6 @@ lo-reader-app {
   font-family: "SourceCodePro", monospace;
 }
 
-.settings-select[data-font-family] option[value="Whitney"] {
-  font-family: "Whitney", system-ui, sans-serif;
-}
-
 .range-control {
   margin-top: 1rem;
 }

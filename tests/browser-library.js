@@ -240,6 +240,8 @@ assert.match(cssText, /\.book-cover-link:hover\s*{[^}]*opacity:\s*0\.65;/s, "Exp
 assert.ok(cardUx.chapterTexts.some((text) => text.includes("глав")), `Expected full chapter word in metadata: ${JSON.stringify(cardUx)}`);
 assert.ok(cardUx.metaTitles.includes("Дата публикации"), `Expected metadata publication date hint: ${JSON.stringify(cardUx)}`);
 assert.ok(cardUx.metaTitles.includes("Количество глав"), `Expected metadata chapters hint: ${JSON.stringify(cardUx)}`);
+assert.ok(cardUx.metaTitles.includes("Авторский лист — 40\u00a0000 печатных знаков"), `Expected metadata volume hint: ${JSON.stringify(cardUx)}`);
+assert.ok(before.metaTexts.some((text) => /^\d{1,3}(?:\u00a0\d{3})*\u00a0зн\., \d+,\d{2}\u00a0а\.л\.$/.test(text)), `Expected volume metadata: ${JSON.stringify(before)}`);
 assert.notEqual(cardUx.tagsDisplayBeforeGrid, "none", `Expected tags visible before grid: ${JSON.stringify(cardUx)}`);
 assert.equal(cardUx.gridDescriptionDisplay, "none", `Expected grid descriptions hidden: ${JSON.stringify(cardUx)}`);
 assert.equal(cardUx.gridTagsDisplay, "none", `Expected grid tags hidden: ${JSON.stringify(cardUx)}`);

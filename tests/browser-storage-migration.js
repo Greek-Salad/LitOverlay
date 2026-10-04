@@ -74,7 +74,7 @@ await send("Page.addScriptToEvaluateOnNewDocument", {
         localStorage.setItem("themePreset", JSON.stringify("custom"));
         localStorage.setItem("themeColors", JSON.stringify({ bg: "#102030", text: "#f0e0d0" }));
         localStorage.setItem("readerSettings", JSON.stringify({
-          fontFamily: "Whitney",
+          fontFamily: "Antiqua",
           fontSize: 21,
           textWidth: 900,
           lineHeight: 1.8,
@@ -126,10 +126,10 @@ assert.equal(beforeResume.dataTheme, "custom", `Expected legacy custom preset: $
 assert.equal(beforeResume.bg, "#102030", `Expected legacy custom background: ${JSON.stringify(beforeResume)}`);
 assert.equal(beforeResume.text, "#f0e0d0", `Expected legacy custom text color: ${JSON.stringify(beforeResume)}`);
 assert.equal(beforeResume.fontSize, "21px", `Expected legacy font size: ${JSON.stringify(beforeResume)}`);
-assert.match(beforeResume.fontFamilyVar, /Whitney/, `Expected legacy font family: ${JSON.stringify(beforeResume)}`);
+assert.match(beforeResume.fontFamilyVar, /Antiqua/, `Expected legacy font family: ${JSON.stringify(beforeResume)}`);
 assert.equal(beforeResume.textWidth, "900px", `Expected legacy text width: ${JSON.stringify(beforeResume)}`);
 assert.equal(beforeResume.lineHeight, "1.8", `Expected legacy line height: ${JSON.stringify(beforeResume)}`);
-assert.equal(beforeResume.fontSelect, "Whitney", `Expected settings select to reflect legacy font: ${JSON.stringify(beforeResume)}`);
+assert.equal(beforeResume.fontSelect, "Antiqua", `Expected settings select to reflect legacy font: ${JSON.stringify(beforeResume)}`);
 
 await evaluate("document.querySelector('[data-resume]').click()");
 await waitFor("document.querySelector('[data-chapter-content] h2')?.textContent.includes('Глава 15')");

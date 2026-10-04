@@ -139,7 +139,6 @@ class LitOverlayReaderApp extends HTMLElement {
                 <option value="LiberationSerif">Liberation Serif</option>
                 <option value="Roboto">Roboto</option>
                 <option value="SourceCodePro">Source Code Pro</option>
-                <option value="Whitney">Whitney</option>
               </select>
               <div class="range-control">
                 <label for="font-size"><span>Размер шрифта</span><span data-font-size-label>16px</span></label>
@@ -249,6 +248,14 @@ class LitOverlayReaderApp extends HTMLElement {
     $("[data-warnings]", this).addEventListener("click", () => this.toggleWarnings());
     $("[data-prev]", this).addEventListener("click", () => this.goToAdjacent("prev"));
     $("[data-next]", this).addEventListener("click", () => this.goToAdjacent("next"));
+    // Один обработчик на весь список: ссылки оглавления обновляются на месте.
+    this.nodes.chapterList.addEventListener("click", (event) => {
+      const link = event.target.closest("[data-chapter]");
+      if (!link) return;
+      event.preventDefault();
+      this.closePanels();
+      this.goToChapter(Number(link.dataset.chapter));
+    });
     this.nodes.readingArea.addEventListener("scroll", () => {
       this.queueProgressUpdate();
       this.saveProgress();
@@ -379,24 +386,26 @@ class LitOverlayReaderApp extends HTMLElement {
       this.nodes.content.innerHTML = html;
       rewriteChapterMediaPaths(this.nodes.content, this.bookId);
       this.currentChapter = number;
+      const reportWarning = (warning) => this.reportWarning(warning);
       if (number > 0) {
-        const reportWarning = (warning) => this.reportWarning(warning);
         new MediaInjector({
           bookId: this.bookId,
           rules: this.mediaRules,
           audioController: this.audio,
           reportWarning
         }).apply(number, this.nodes.content);
-        this.hints = new HintInjector({
-          rules: this.hintRules,
-          reportWarning
-        });
-        this.hints.apply(number, this.nodes.content);
       }
+      // Хинты работают и в главе 0: у книг, где пролог — полноценная глава, он тоже нуждается в пояснениях.
+      this.hints = new HintInjector({
+        rules: this.hintRules,
+        reportWarning
+      });
+      this.hints.apply(number, this.nodes.content);
       this.renderChapterList();
       this.postProcessChapter();
       this.setupParagraphHighlighting();
       this.updateNavigation();
+      this.loadNeighbors(number);
       this.updateUrl(number);
       await this.restoreScroll(options.scrollPercent || 0);
       this.persistProgress();
@@ -441,23 +450,32 @@ class LitOverlayReaderApp extends HTMLElement {
     }
   }
 
+  // Оглавление обновляется на месте: пересоздание ссылок под курсором съедает клики,
+  // а список перестраивается при каждой найденной пачке глав и каждом переходе.
   renderChapterList() {
+    const list = this.nodes.chapterList;
     if (!this.resolver.chapters.length) {
-      this.nodes.chapterList.innerHTML = `<div class="chapter-list-loading">Загрузка оглавления...</div>`;
+      list.innerHTML = `<div class="chapter-list-loading">Загрузка оглавления...</div>`;
       return;
     }
-    this.nodes.chapterList.innerHTML = this.resolver.chapters.map((chapter) => `
-      <a class="chapter-item" href="${bookUrl(this.bookId, chapter.number)}" data-chapter="${chapter.number}">
-        ${escapeHtml(chapter.title)}
-      </a>
-    `).join("");
-    this.nodes.chapterList.querySelectorAll("[data-chapter]").forEach((link) => {
-      link.addEventListener("click", (event) => {
-        event.preventDefault();
-        this.closePanels();
-        this.goToChapter(Number(link.dataset.chapter));
-      });
-    });
+    list.querySelector(".chapter-list-loading")?.remove();
+    const existing = new Map([...list.querySelectorAll("[data-chapter]")].map((link) => [Number(link.dataset.chapter), link]));
+    let previous = null;
+    for (const chapter of this.resolver.chapters) {
+      let link = existing.get(chapter.number);
+      existing.delete(chapter.number);
+      if (!link) {
+        link = document.createElement("a");
+        link.className = "chapter-item";
+        link.href = bookUrl(this.bookId, chapter.number);
+        link.dataset.chapter = String(chapter.number);
+      }
+      if (link.textContent !== chapter.title) link.textContent = chapter.title;
+      const expected = previous ? previous.nextElementSibling : list.firstElementChild;
+      if (link !== expected) list.insertBefore(link, expected);
+      previous = link;
+    }
+    for (const link of existing.values()) link.remove();
   }
 
   async resolveChaptersInBackground() {
@@ -490,14 +508,9 @@ class LitOverlayReaderApp extends HTMLElement {
         .map((chapter) => chapter.number)
         .filter((number) => !this.loadedTitleNumbers.has(number));
       for (const number of pending) {
+        if (this.loadedTitleNumbers.has(number)) continue;   // соседей могли загрузить вне очереди
         try {
-          const title = await this.resolver.loadTitle(number);
-          this.loadedTitleNumbers.add(number);
-          this.failedTitleNumbers.delete(number);
-          this.clearWarning("chapter-title", `chapter-${number}`);
-          const link = this.nodes.chapterList.querySelector(`[data-chapter="${number}"]`);
-          if (link && title) link.textContent = title;
-          this.updateNavigation();
+          await this.loadChapterTitle(number);
           await new Promise((resolve) => window.setTimeout(resolve, 20));
         } catch (error) {
           this.failedTitleNumbers.add(number);
@@ -508,6 +521,36 @@ class LitOverlayReaderApp extends HTMLElement {
       this.titleLoadingRunning = false;
     }
     if (this.failedTitleNumbers.size) this.scheduleBackgroundRetry();
+  }
+
+  async loadChapterTitle(number) {
+    const title = await this.resolver.loadTitle(number);
+    this.loadedTitleNumbers.add(number);
+    this.failedTitleNumbers.delete(number);
+    this.clearWarning("chapter-title", `chapter-${number}`);
+    const link = this.nodes.chapterList.querySelector(`[data-chapter="${number}"]`);
+    if (link && title && link.textContent !== title) link.textContent = title;
+    this.updateNavigation();
+    return title;
+  }
+
+  // Соседние главы — вне общей очереди: кнопкам «назад/вперёд» сразу нужны
+  // верная цель и название, а не ожидание, пока фон дойдёт до них по порядку.
+  async loadNeighbors(number) {
+    try {
+      const neighbors = await Promise.all([
+        this.resolver.findNeighbor(number, -1),
+        this.resolver.findNeighbor(number, 1)
+      ]);
+      if (number !== this.currentChapter) return;
+      this.renderChapterList();
+      this.updateNavigation();
+      for (const chapter of neighbors.filter(Boolean)) {
+        if (!this.loadedTitleNumbers.has(chapter.number)) await this.loadChapterTitle(chapter.number);
+      }
+    } catch (error) {
+      // Сеть недоступна — соседей и названия доберёт фоновая загрузка с повторами.
+    }
   }
 
   scheduleBackgroundRetry() {
@@ -540,19 +583,24 @@ class LitOverlayReaderApp extends HTMLElement {
 
   updateNavigation() {
     const number = this.currentChapter;
-    this.nodes.breadcrumb.textContent = number === 0 ? "Предисловие" : `Глава ${number}`;
+    const crumb = number === 0 ? "Предисловие" : `Глава ${number}`;
+    if (this.nodes.breadcrumb.textContent !== crumb) this.nodes.breadcrumb.textContent = crumb;
     this.nodes.chapterList.querySelectorAll("[data-chapter]").forEach((link) => {
       link.classList.toggle("active", Number(link.dataset.chapter) === number);
     });
-    const { prev, next } = this.resolver.getAdjacent(number);
-    const prevBtn = $("[data-prev]", this);
-    const nextBtn = $("[data-next]", this);
-    prevBtn.disabled = !prev;
-    nextBtn.disabled = !next;
-    const prevLabel = prev ? this.formatChapterNavLabel(prev) : "Начало";
-    const nextLabel = next ? this.formatChapterNavLabel(next) : "Конец";
-    prevBtn.innerHTML = `${icon("chevron-left", 16)} <span>${escapeHtml(prevLabel)}</span>`;
-    nextBtn.innerHTML = `<span>${escapeHtml(nextLabel)}</span> ${icon("chevron-right", 16)}`;
+    const { prev, next } = number === null ? { prev: null, next: null } : this.resolver.getNeighbors(number);
+    this.setNavButton($("[data-prev]", this), prev, "Начало", "Предыдущая глава");
+    this.setNavButton($("[data-next]", this), next, "Конец", "Следующая глава");
+  }
+
+  // chapter: глава; null — соседа нет (кнопка выключена); undefined — ещё ищется.
+  // Меняется только текст подписи: замена содержимого кнопки под курсором съедает клик.
+  setNavButton(button, chapter, edgeLabel, pendingLabel) {
+    const disabled = chapter === null;
+    if (button.disabled !== disabled) button.disabled = disabled;
+    const label = chapter ? this.formatChapterNavLabel(chapter) : disabled ? edgeLabel : pendingLabel;
+    const span = button.querySelector("span");
+    if (span && span.textContent !== label) span.textContent = label;
   }
 
   formatChapterNavLabel(chapter) {
@@ -560,9 +608,19 @@ class LitOverlayReaderApp extends HTMLElement {
     return String(chapter.title || "").trim() || fallback;
   }
 
-  goToAdjacent(direction) {
-    const adjacent = this.resolver.getAdjacent(this.currentChapter);
-    const chapter = adjacent[direction];
+  async goToAdjacent(direction) {
+    const number = this.currentChapter;
+    if (number === null) return;
+    let chapter = this.resolver.getNeighbors(number)[direction];
+    // Сосед ещё не найден (оглавление грузится) — ищем его сейчас, а не игнорируем нажатие.
+    if (chapter === undefined) {
+      try {
+        chapter = await this.resolver.findNeighbor(number, direction === "prev" ? -1 : 1);
+      } catch (error) {
+        chapter = null;
+      }
+      if (number !== this.currentChapter) return;
+    }
     if (chapter) this.goToChapter(chapter.number);
   }
 
@@ -773,6 +831,10 @@ class LitOverlayReaderApp extends HTMLElement {
       const percent = max > min ? ((value - min) / (max - min)) * 100 : 0;
       slider.style.setProperty("--slider-percent", `${clamp(percent, 0, 100)}%`);
     });
+    $$("[data-line-height-preset]", this).forEach((button) => {
+      const value = Number(button.dataset.lineHeightPreset);
+      button.classList.toggle("active", Math.abs(value - this.settings.lineHeight) < 0.05);
+    });
   }
 
   openColorPicker(kind) {
@@ -810,6 +872,9 @@ class LitOverlayReaderApp extends HTMLElement {
         button.style.setProperty("--color-picker-text", colorButtonTextColor(colors[key]));
       }
     }
+    $$("[data-theme-preset]", this).forEach((button) => {
+      button.classList.toggle("active", button.dataset.themePreset === this.theme.state.preset);
+    });
   }
 
   async showLyrics(track) {

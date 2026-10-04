@@ -9,7 +9,7 @@ import {
   loadReadingProgress,
   saveLibraryPrefs
 } from "./core/storage.js";
-import { bookUrl, copyText, escapeHtml, formatDate, formatTimeAgo } from "./core/utils.js";
+import { bookUrl, copyText, escapeHtml, formatDate, formatTimeAgo, formatVolume } from "./core/utils.js";
 import { loadLibraryBooks, needsAgeGate } from "./data/books.js";
 import { showAgeGateModal, toast } from "./ui/modals.js";
 
@@ -227,6 +227,9 @@ class LitOverlayLibraryApp extends HTMLElement {
       { icon: book.finished ? "check-circle" : "refresh", text: book.finished ? "Завершено" : "В процессе", hint: "Статус произведения" },
       book.writtenDate ? { icon: "calendar", text: formatDate(book.writtenDate), hint: "Дата публикации" } : null,
       { icon: "book-open", text: formatChaptersCount(book.totalChapters ?? 1), hint: "Количество глав" },
+      Number(book.charCount) > 0
+        ? { icon: "file-text", text: formatVolume(book.charCount), hint: "Авторский лист — 40 000 печатных знаков", label: `Объём: ${formatVolume(book.charCount)}` }
+        : null,
       book.hasMedia ? { icon: "audio", text: "аудио", hint: "Есть аудио" } : null,
       book.hasHints ? { icon: "lightbulb", text: "подсказки", hint: "Есть подсказки" } : null
     ].filter(Boolean);
@@ -240,7 +243,7 @@ class LitOverlayLibraryApp extends HTMLElement {
           <p class="book-author">${escapeHtml(book.author || "Автор неизвестен")}</p>
           <p class="book-description">${escapeHtml(book.description || "")}</p>
           <div class="book-tags">${tags}</div>
-          <div class="book-meta">${meta.map((item) => `<span class="book-meta-item" title="${escapeHtml(item.hint)}" aria-label="${escapeHtml(`${item.hint}: ${item.text}`)}">${icon(item.icon, 14)}<span>${escapeHtml(item.text)}</span></span>`).join("")}</div>
+          <div class="book-meta">${meta.map((item) => `<span class="book-meta-item" title="${escapeHtml(item.hint)}" aria-label="${escapeHtml(item.label ?? `${item.hint}: ${item.text}`)}">${icon(item.icon, 14)}<span>${escapeHtml(item.text)}</span></span>`).join("")}</div>
         </div>
         <div class="book-card-tools">
           <button class="icon-btn" type="button" data-copy-link="${id}" aria-label="Скопировать ссылку" title="Скопировать ссылку">${icon("copy", 18)}</button>

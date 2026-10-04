@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { adjustHex, bookUrl, chapterCandidates, getBookIdFromLocation, mix } from "../js/core/utils.js";
+import { adjustHex, bookUrl, chapterCandidates, formatVolume, getBookIdFromLocation, mix } from "../js/core/utils.js";
+import { chapterNumbers, visibleLength, withCharCount } from "../tools/count-volume.js";
 import { AudioController, audioTrackId, getSliderPercent, isPrimarySliderPointer } from "../js/reader/audio.js";
 import {
   getLegacyLastChapter,
@@ -10,6 +11,7 @@ import {
   loadReadingProgress,
   saveAgeGateConfirmed,
   saveBookProgress,
+  READER_FONTS,
   saveReaderSettings,
   STANDARD_THEMES
 } from "../js/core/storage.js";
@@ -190,7 +192,7 @@ assert.deepEqual(loadReaderSettings().value, {
   lastChapter: 1
 });
 localStorage.setItem("readerSettings", JSON.stringify({
-  fontFamily: "Whitney",
+  fontFamily: "Antiqua",
   fontSize: 21,
   textWidth: 900,
   lineHeight: 1.8,
@@ -201,13 +203,20 @@ assert.equal(getLegacyLastChapter(loadReaderSettings().raw), 16);
 assert.equal(getLegacyLastChapter({ lastChapter: 1 }), null);
 saveReaderSettings({ fontSize: 20 });
 assert.deepEqual(JSON.parse(localStorage.getItem("readerSettings")), {
-  fontFamily: "Whitney",
+  fontFamily: "Antiqua",
   fontSize: 20,
   textWidth: 900,
   lineHeight: 1.8,
   lastChapter: 16,
   experimental: "keep"
 });
+
+localStorage.setItem("readerSettings", JSON.stringify({ fontFamily: "NoSuchFont", fontSize: 18 }));
+assert.equal(loadReaderSettings().value.fontFamily, "Lato", "Unknown font must fall back to the default one");
+assert.equal(loadReaderSettings().value.fontSize, 18, "Other settings stay when the font falls back");
+const readerSource = readFileSync(new URL("../js/reader.js", import.meta.url), "utf8");
+const fontSelect = readerSource.slice(readerSource.indexOf("data-font-family>"), readerSource.indexOf("</select>", readerSource.indexOf("data-font-family>")));
+assert.deepEqual([...fontSelect.matchAll(/<option value="([^"]+)"/g)].map((match) => match[1]), READER_FONTS, "READER_FONTS must match the font select");
 
 localStorage.setItem("themePreset", JSON.stringify("light"));
 localStorage.setItem("themeColors", JSON.stringify({ bg: "#ffffff", text: "#000000" }));
@@ -277,6 +286,30 @@ assert.equal(resolver.getFile(0), "00.html");
 assert.equal(resolver.getFile(7), "7.html");
 assert.equal(resolver.getFile(8), "08.html");
 assert.equal(resolver.chapters.length, 3);
+
+// Соседи главы: undefined, пока номера между не проверены; пропуски в нумерации обходятся.
+const gapExisting = new Set([
+  "./books/gap/chapters/01.html",
+  "./books/gap/chapters/02.html",
+  "./books/gap/chapters/04.html",
+  "./books/gap/chapters/05.html"
+]);
+globalThis.fetch = async (url) => ({
+  ok: gapExisting.has(url),
+  status: gapExisting.has(url) ? 200 : 404,
+  json: async () => ({}),
+  text: async () => ""
+});
+const gapResolver = new ChapterResolver("gap", { totalChapters: 6 });
+await gapResolver.resolveNumber(4);
+assert.deepEqual(gapResolver.getNeighbors(4), { prev: undefined, next: undefined }, "Unchecked neighbours must stay unknown");
+assert.equal((await gapResolver.findNeighbor(4, -1))?.number, 2, "Absent chapter 3 must be skipped");
+assert.equal(gapResolver.getNeighbors(4).prev?.number, 2);
+assert.equal((await gapResolver.findNeighbor(4, 1))?.number, 5);
+assert.equal(await gapResolver.findNeighbor(5, 1), null, "Chapter 6 is absent: no next chapter");
+assert.equal(gapResolver.getNeighbors(5).next, null);
+assert.equal(await gapResolver.findNeighbor(1, -1), null, "No preface: no previous chapter");
+assert.equal(gapResolver.getNeighbors(1).prev, null);
 
 const paddedExisting = new Set([
   "./books/padded/chapters/00.html",
@@ -358,5 +391,26 @@ assert.equal(flakyResolver.absentNumbers.has(7), false, "Network failure must no
 networkUp = true;
 const recovered = await flakyResolver.resolveNumber(7);
 assert.equal(recovered?.number, 7, "Chapter must resolve once the network is back");
+
+// Объём произведения: знаки с пробелами видимого текста и вывод в карточке.
+assert.equal(formatVolume(456507), "456\u00a0507\u00a0зн., 11,41\u00a0а.л.");
+assert.equal(formatVolume(28999), "28\u00a0999\u00a0зн., 0,72\u00a0а.л.");
+assert.equal(visibleLength("<h2>Глава 1</h2>\n<p>Один  два\n три.</p>\n<p><br></p>"), 20, "Разметка, лишние пробелы и пустые абзацы не считаются");
+assert.equal(visibleLength("<p>«Слово&nbsp;— слово&hellip;»</p>"), 16, "Сущности декодируются, неразрывный пробел считается");
+assert.equal(visibleLength("<pre>«Initium!\nFinis!»</pre>"), 16, "Строки внутри <pre> — разрывы, а не пробелы");
+assert.equal(visibleLength("<blockquote>Раз\n<br>два</blockquote>"), 6, "<br> — разрыв строки");
+assert.equal(visibleLength("<p>Текст</p>\n<div class=\"chapter-publish-date\">27.10.2025</div>"), 5, "Служебная дата публикации не считается");
+assert.equal(visibleLength("<p>ав\u00adтор\u200b</p>"), 5, "Невидимые символы не считаются");
+assert.deepEqual(chapterNumbers({ totalChapters: 3, hasPreface: true }), [0, 1, 2, 3]);
+assert.deepEqual(chapterNumbers({ totalChapters: 2 }), [1, 2]);
+assert.equal(
+  withCharCount('{\n    "id": "x",\n    "totalChapters": 3,\n    "hasMedia": false\n}', 42),
+  '{\n    "id": "x",\n    "totalChapters": 3,\n    "charCount": 42,\n    "hasMedia": false\n}'
+);
+assert.equal(
+  withCharCount('{\n  "totalChapters": 3,\n  "charCount": 7,\n  "tags": ["a", "b"]\n}', 9),
+  '{\n  "totalChapters": 3,\n  "charCount": 9,\n  "tags": ["a", "b"]\n}'
+);
+assert.equal(JSON.parse(withCharCount('{\n  "id": "x",\n  "totalChapters": 3\n}', 5)).charCount, 5);
 
 console.log("Unit checks passed.");

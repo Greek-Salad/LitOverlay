@@ -23,6 +23,10 @@ export const DEFAULT_READER_SETTINGS = {
   lastChapter: 1
 };
 
+// Шрифты из списка настроек (select[data-font-family] в reader.js). Сохранённый шрифт
+// не из этого списка заменяется шрифтом по умолчанию.
+export const READER_FONTS = ["Lato", "Antiqua", "LiberationSans", "LiberationSerif", "Roboto", "SourceCodePro"];
+
 export const DEFAULT_THEME_COLORS = {
   bg: "#202124",
   text: "#e8eaed"
@@ -57,6 +61,7 @@ export function loadReaderSettings() {
   return {
     value: {
       ...settings,
+      fontFamily: READER_FONTS.includes(settings.fontFamily) ? settings.fontFamily : DEFAULT_READER_SETTINGS.fontFamily,
       fontSize: clamp(settings.fontSize, 12, 24),
       textWidth: clamp(settings.textWidth, 400, 1200),
       lineHeight: clamp(settings.lineHeight, 1.2, 2.4),
