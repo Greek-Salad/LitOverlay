@@ -9,7 +9,7 @@ import {
   loadReadingProgress,
   saveLibraryPrefs
 } from "./core/storage.js";
-import { bookUrl, copyText, escapeHtml, formatDate, formatTimeAgo, formatVolume } from "./core/utils.js";
+import { bookUrl, copyText, escapeHtml, formatDate, formatTimeAgo, formatVolume, toCharCount } from "./core/utils.js";
 import { loadLibraryBooks, needsAgeGate } from "./data/books.js";
 import { showAgeGateModal, toast } from "./ui/modals.js";
 
@@ -223,13 +223,13 @@ class LitOverlayLibraryApp extends HTMLElement {
       ? `<img class="book-cover" src="./books/${id}/${escapeHtml(book.cover)}" alt="Обложка: ${escapeHtml(book.title)}" loading="lazy">`
       : `<div class="book-cover-placeholder">${escapeHtml((book.title || "?").slice(0, 1))}</div>`;
     const tags = (book.tags ?? []).map((tag) => `<span class="book-tag">${icon("tag", 12)}${escapeHtml(tag)}</span>`).join("");
+    const chars = toCharCount(book.charCount);
+    const volumeText = chars > 0 ? formatVolume(chars) : "объём не посчитан";
     const meta = [
       { icon: book.finished ? "check-circle" : "refresh", text: book.finished ? "Завершено" : "В процессе", hint: "Статус произведения" },
       book.writtenDate ? { icon: "calendar", text: formatDate(book.writtenDate), hint: "Дата публикации" } : null,
       { icon: "book-open", text: formatChaptersCount(book.totalChapters ?? 1), hint: "Количество глав" },
-      Number(book.charCount) > 0
-        ? { icon: "file-text", text: formatVolume(book.charCount), hint: "Авторский лист — 40 000 печатных знаков", label: `Объём: ${formatVolume(book.charCount)}` }
-        : null,
+      { icon: "file-text", text: volumeText, hint: "Авторский лист — 40 000 печатных знаков", label: chars > 0 ? `Объём: ${volumeText}` : volumeText },
       book.hasMedia ? { icon: "audio", text: "аудио", hint: "Есть аудио" } : null,
       book.hasHints ? { icon: "lightbulb", text: "подсказки", hint: "Есть подсказки" } : null
     ].filter(Boolean);
