@@ -411,6 +411,24 @@
       "chapter": 31,
       "position": "after",
       "anchor": "Он закрепил её вторым потоком, подпирая снизу и не давая провиснуть"
+    },
+    {
+      "id": "image-33-1",
+      "type": "image",
+      "src": ["media/images/chat13.png"],
+      "format": "image/png",
+      "chapter": 33,
+      "position": "instead",
+      "anchor": "Настя: Привет! Ты ещё в городе? Может, посидим где-нибудь, чаю попьём? Если ты не против, конечно."
+    },
+    {
+      "id": "image-33-2",
+      "type": "image",
+      "src": ["media/images/chat14.png"],
+      "format": "image/png",
+      "chapter": 33,
+      "position": "instead",
+      "anchor": "Игорь: Привет. Давай, я не против. Скинь адрес, подъеду."
     }
   ],
   "settings": {
