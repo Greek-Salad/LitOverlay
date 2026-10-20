@@ -404,6 +404,15 @@
       "anchor": "Говорящие головы сняли ошейники?"
     },
     {
+      "id": "image-29-1",
+      "type": "image",
+      "src": ["media/images/fan_art.png"],
+      "format": "image/png",
+      "chapter": 29,
+      "position": "before",
+      "anchor": "Фан-арт прямо у тебя в голове?"
+    },
+    {
       "id": "image-31-1",
       "type": "image",
       "src": ["media/images/cloud.png"],
